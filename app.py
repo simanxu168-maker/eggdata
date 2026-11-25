@@ -1,9 +1,11 @@
 """
 鸡蛋 · 平均淘汰日龄拐头跟踪（Streamlit 网页版）
 --------------------------------------------------
-运行方式（本地）：  streamlit run app.py
-数据文件：          同目录下的「鸡蛋日龄拐头跟踪数据库.xlsx」
-更新数据：          改 Excel → 保存 → 网页右上角 Rerun（或重启 app）
+本地运行：streamlit run app.py
+数据文件：同目录下的「鸡蛋日龄拐头跟踪数据库.xlsx」
+更新数据：改 Excel → 保存 → 页面右上角 Rerun；线上版重新上传同名 xlsx 即可
+
+页面按板块切成 4 个 Tab：本周结论 / 趋势图表 / 信号面板 / 周度数据
 """
 
 from datetime import datetime
@@ -34,7 +36,31 @@ COLS = [
     "状态", "三条件", "通道信号",
 ]
 
-st.set_page_config(page_title="鸡蛋 · 淘汰日龄拐头跟踪", page_icon="🥚", layout="wide")
+st.set_page_config(
+    page_title="鸡蛋 · 淘汰日龄拐头跟踪",
+    page_icon="🥚",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# ---------------- 移动端适配 ----------------
+st.markdown(
+    """
+<style>
+@media (max-width: 640px){
+  .block-container{padding:1.0rem .7rem 2rem !important;}
+  h1{font-size:1.35rem !important; line-height:1.35 !important;}
+  h2, h3{font-size:1.05rem !important;}
+  [data-testid="stMetricValue"]{font-size:1.55rem !important;}
+  [data-testid="stMetricLabel"]{font-size:.78rem !important;}
+  [data-testid="stMetricDelta"]{font-size:.72rem !important;}
+  [data-testid="stCaptionContainer"] p{font-size:.75rem !important;}
+  .stTabs [data-baseweb="tab"]{font-size:.82rem; padding:.35rem .5rem;}
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 
 # ---------------- 读数据 ----------------
@@ -100,7 +126,9 @@ if not DATA_FILE.exists():
     )
     st.stop()
 
-df = load_data(str(DATA_FILE), DATA_FILE.stat().st_mtime)
+with st.spinner("正在读取 Excel…"):
+    df = load_data(str(DATA_FILE), DATA_FILE.stat().st_mtime)
+
 if len(df) < 2:
     st.error("『每周数据』里没有读到有效数据，请检查表里最新一周是否已填好。")
     st.stop()
@@ -110,7 +138,8 @@ latest, prev = df.iloc[-1], df.iloc[-2]
 # ---------------- 侧边栏 ----------------
 with st.sidebar:
     st.header("显示设置")
-    weeks = st.slider("图表显示周数", min_value=13, max_value=104, value=52, step=13)
+    weeks = st.slider("图表显示周数", min_value=13, max_value=104, value=26, step=13,
+                      help="手机端建议选 13–26 周，图表更轻、滑动更顺")
     table_weeks = st.slider("明细表周数", min_value=12, max_value=104, value=26, step=12)
     st.divider()
     st.caption(f"数据文件：{DATA_FILE.name}")
@@ -145,22 +174,6 @@ gate_ok = int(bool(not pd.isna(latest["淘鸡价"]) and latest["淘鸡价"] < TA
 
 state = latest["状态"] if isinstance(latest["状态"], str) else "—"
 
-if ok1 == 3:
-    st.success(f"**拐头确认**：三前置条件全部成立（{ok1}/3）。")
-elif ok1 >= 1:
-    st.warning(f"**高位平台 · 尚未拐头**：三前置 {ok1}/3，日龄只是不再涨，不等于开始跌。")
-else:
-    st.info(f"**信号未启动**：三前置 0/3，日龄仍在高位僵持。")
-
-# ---------------- KPI ----------------
-row1 = st.columns(3)
-row2 = st.columns(3)
-
-
-def metric(col, label, value, delta=None):
-    with col:
-        st.metric(label, value, delta, delta_color="off")
-
 
 def fmt(v, dp=0, suffix=""):
     return "—" if pd.isna(v) else f"{v:,.{dp}f}{suffix}"
@@ -170,164 +183,198 @@ def chg(v, dp=0, suffix=""):
     return "—" if pd.isna(v) else f"{v:+.{dp}f}{suffix}"
 
 
-metric(row1[0], "钢联淘汰日龄", fmt(latest["钢联日龄"], 0, " 天"), chg(latest["日龄环比"], 0, " 天"))
-metric(row1[1], "卓创淘汰日龄", fmt(latest["卓创日龄"], 0, " 天"), chg(latest["卓创日龄"] - prev["卓创日龄"], 0, " 天"))
-metric(row1[2], "周度出栏量", fmt(latest["周出栏"], 0, " 万只"), chg(latest["出栏环比"], 2, "%"))
-metric(row2[0], "蛋价周均价", fmt(latest["蛋价"], 2, " 元/斤"), chg((latest["蛋价"] / prev["蛋价"] - 1) * 100, 2, "%"))
-metric(row2[1], "淘鸡周均价", fmt(latest["淘鸡价"], 2, " 元/斤"), chg((latest["淘鸡价"] / prev["淘鸡价"] - 1) * 100, 2, "%"))
-metric(row2[2], "单斤利润", fmt(latest["单斤利润"], 2, " 元/斤"), chg(latest["单斤利润"] - prev["单斤利润"], 2, " 元"))
-
-# ---------------- 主图：日龄 vs 出栏 ----------------
-st.subheader("淘汰日龄 vs 周度出栏")
-st.caption("「量增 + 龄降」才是真去化，缺一个都不算。")
-
-fig = make_subplots(specs=[[{"secondary_y": True}]])
-fig.add_trace(
-    go.Bar(x=d["日期"], y=d["周出栏"], name="周出栏（万只）", marker_color="#ccdae7", opacity=0.9),
-    secondary_y=True,
-)
-fig.add_trace(
-    go.Scatter(x=d["日期"], y=d["钢联日龄"], name="钢联日龄", line=dict(color="#1d4e79", width=2)),
-    secondary_y=False,
-)
-fig.add_trace(
-    go.Scatter(x=d["日期"], y=d["卓创日龄"], name="卓创日龄", line=dict(color="#c08a1e", width=2, dash="dot")),
-    secondary_y=False,
-)
-fig.add_trace(
-    go.Scatter(
-        x=[d["日期"].min(), d["日期"].max()], y=[AGE_WARN, AGE_WARN], mode="lines", name=f"{AGE_WARN} 天",
-        line=dict(color="#c8453c", dash="dash", width=1.2), hoverinfo="skip",
-    ),
-    secondary_y=False,
-)
-fig.update_yaxes(title_text="日龄（天）", secondary_y=False)
-fig.update_yaxes(title_text="出栏（万只）", secondary_y=True, rangemode="tozero")
-fig.update_layout(
-    height=420, hovermode="x unified",
-    margin=dict(l=10, r=10, t=40, b=10),
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-)
-st.plotly_chart(fig, width="stretch")
-
-# ---------------- 两张小图 ----------------
-c_left, c_right = st.columns(2)
-
-with c_left:
-    st.subheader("单斤利润")
-    st.caption("跌破 1.00 并传导 2–5 周，是拐头的第一个前置条件。")
-    fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(
-        x=d["日期"], y=d["单斤利润"], name="单斤利润（元/斤）",
-        fill="tozeroy", line=dict(color="#1f8a5b", width=1.8),
-    ))
-    fig2.add_hline(y=PROFIT_LINE, line_dash="dash", line_color="#c8453c",
-                   annotation_text=f"{PROFIT_LINE:.2f} 元", annotation_position="top left")
-    fig2.update_layout(height=260, margin=dict(l=10, r=10, t=30, b=10), hovermode="x unified", showlegend=False)
-    st.plotly_chart(fig2, width="stretch")
-
-with c_right:
-    st.subheader("蛋价 vs 淘鸡价")
-    st.caption("淘鸡跌得比蛋价快（比值 > 1）＝ 屠宰端接不住。")
-    fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=d["日期"], y=d["蛋价"], name="蛋价", line=dict(color="#1d4e79", width=1.8)))
-    fig3.add_trace(go.Scatter(x=d["日期"], y=d["淘鸡价"], name="淘鸡价", line=dict(color="#b5603f", width=1.8)))
-    fig3.add_hline(y=TAO_LINE, line_dash="dash", line_color="#c8453c", annotation_text=f"{TAO_LINE:.2f}")
-    fig3.add_hline(y=TAO_BREAK, line_dash="dot", line_color="#9aa3b0", annotation_text=f"{TAO_BREAK:.2f}")
-    fig3.update_layout(height=260, margin=dict(l=10, r=10, t=30, b=10), hovermode="x unified",
-                       legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
-    st.plotly_chart(fig3, width="stretch")
-
-# ---------------- 信号面板 ----------------
-st.subheader("信号面板")
-
-ICON = {"ok": "🟢", "part": "🟡", "gray": "⚪"}
-
-s1 = [
-    ("① 利润传导", f"利润 {fmt(latest['单斤利润'], 2)} 元/斤，连续 {ps} 周低于 {PROFIT_LINE:.2f}",
-     "已达成 · 传导期满" if ps >= PROFIT_WIN_HI else ("已达成 · 传导中" if ps >= PROFIT_WIN_LO else "未达"),
-     "ok" if c1 else "gray"),
-    ("② 池子释放", f"出栏 {fmt(latest['周出栏'], 0)} 万只，环比 {chg(latest['出栏环比'], 2, '%')}，连增 {up} 周；日龄环比 {chg(latest['日龄环比'], 1, ' 天')}",
-     "已达成 · 量增龄降" if c2 else "未达", "ok" if c2 else "gray"),
-    ("③ 屠宰通道", f"通道比值 {fmt(chan_now, 2)}（阈值 > {CHAN_THR:.1f}），连续 {chan_streak} 周",
-     "已达成 · 连续两周" if c3 else "未达", "ok" if c3 else "gray"),
-]
-s2 = [
-    ("① 通道比值", f"本周 {fmt(chan_now, 2)}，阈值 > {CHAN_THR:.1f}",
-     "已亮" if chan_streak >= 2 else "未亮", "ok" if chan_streak >= 2 else "gray"),
-    ("② 大码蛋占比", f"{fmt(latest['大码占比'], 2)}%，上周 {fmt(prev['大码占比'], 2)}%",
-     "已亮 · 开始下降" if (not pd.isna(latest["大码占比"]) and latest["大码占比"] < prev["大码占比"]) else "未亮 · 大码还在堆",
-     "ok" if (not pd.isna(latest["大码占比"]) and latest["大码占比"] < prev["大码占比"]) else "gray"),
-    ("③ 淘鸡价水平", f"{fmt(latest['淘鸡价'], 2)} 元/斤，距 {TAO_LINE:.2f} {chg(latest['淘鸡价'] - TAO_LINE, 2, ' 元')}",
-     "已亮 · 破位并站稳" if (not pd.isna(latest["淘鸡价"]) and latest["淘鸡价"] < TAO_LINE) else "未亮",
-     "ok" if (not pd.isna(latest["淘鸡价"]) and latest["淘鸡价"] < TAO_LINE) else "gray"),
-]
-s3 = [
-    ("第一关 · 现金线", "蛋价 < 550 天现金成本（全价料×2.45+0.45）",
-     "无数据 · 全价料未填" if pd.isna(latest["全价料"]) else "待判定", "gray"),
-    ("第二关 · 日龄线", f"钢联 {fmt(latest['钢联日龄'], 0)} 天，环比 {chg(latest['日龄环比'], 1, ' 天')}，连续下行 {down} 周",
-     "已亮 · 连续两周下行" if down >= 2 else ("部分 · 下行 1 周" if down == 1 else "未亮"),
-     "ok" if down >= 2 else ("part" if down == 1 else "gray")),
-    ("第三关 · 淘鸡线", f"全国周均 {fmt(latest['淘鸡价'], 2)}，破位线 {TAO_BREAK:.2f}",
-     "已亮 · 破 4.8" if (not pd.isna(latest["淘鸡价"]) and latest["淘鸡价"] < TAO_BREAK) else "未亮",
-     "ok" if (not pd.isna(latest["淘鸡价"]) and latest["淘鸡价"] < TAO_BREAK) else "gray"),
-]
-
-
-def render_group(col, title, items, total):
+def metric(col, label, value, delta=None):
     with col:
-        st.markdown(f"**{title}　{total} / 3**")
-        for name, read, judge, level in items:
-            st.markdown(f"{ICON[level]} **{name}**  \n{judge}　·　{read}")
+        st.metric(label, value, delta, delta_color="off")
 
 
-gc1, gc2, gc3 = st.columns(3)
-render_group(gc1, "① 三前置条件", s1, ok1)
-render_group(gc2, "② 先行征兆", s2, lead_ok)
-render_group(gc3, "③ 三道关", s3, gate_ok)
+tab1, tab2, tab3, tab4 = st.tabs(["① 本周结论", "② 趋势图表", "③ 信号面板", "④ 周度数据"])
 
-st.caption(
-    f"状态判别：**{state}**　·　"
-    f"出栏 {'↑' if latest['出栏环比'] > 0 else '↓'} / 日龄 "
-    f"{'↓' if latest['日龄环比'] < 0 else ('→' if latest['日龄环比'] == 0 else '↑')}"
-    f"　·　只有「日龄降 + 出栏增」才是真去化"
-)
+# ---------------- ① 本周结论 ----------------
+with tab1:
+    if ok1 == 3:
+        st.success(f"**拐头确认**：三前置条件全部成立（{ok1}/3）。")
+    elif ok1 >= 1:
+        st.warning(f"**高位平台 · 尚未拐头**：三前置 {ok1}/3，日龄只是不再涨，不等于开始跌。")
+    else:
+        st.info(f"**信号未启动**：三前置 0/3，日龄仍在高位僵持。")
 
-# ---------------- 明细表 ----------------
-st.subheader("周度数据")
-tbl = df.tail(table_weeks)[::-1].copy()
-tbl["日期"] = tbl["日期"].dt.strftime("%Y-%m-%d")
-tbl = tbl.rename(columns={
-    "周出栏": "周出栏(万只)", "蛋价": "蛋价(元/斤)", "淘鸡价": "淘鸡价(元/斤)",
-    "单斤利润": "单斤利润(元)", "日龄环比": "日龄环比(天)", "出栏环比": "出栏环比(%)",
-})
-show_cols = ["日期", "卓创日龄", "钢联日龄", "周出栏(万只)", "蛋价(元/斤)", "淘鸡价(元/斤)",
-             "单斤利润(元)", "日龄环比(天)", "出栏环比(%)", "通道", "状态"]
-st.dataframe(
-    tbl[show_cols].style.format({
-        "卓创日龄": "{:.0f}", "钢联日龄": "{:.0f}", "周出栏(万只)": "{:.0f}",
-        "蛋价(元/斤)": "{:.2f}", "淘鸡价(元/斤)": "{:.2f}", "单斤利润(元)": "{:.2f}",
-        "日龄环比(天)": "{:+.0f}", "出栏环比(%)": "{:+.2f}", "通道": "{:.2f}",
-    }, na_rep="—"),
-    hide_index=True, width="stretch", height=430,
-)
+    row1 = st.columns(3)
+    row2 = st.columns(3)
+    metric(row1[0], "钢联淘汰日龄", fmt(latest["钢联日龄"], 0, " 天"), chg(latest["日龄环比"], 0, " 天"))
+    metric(row1[1], "卓创淘汰日龄", fmt(latest["卓创日龄"], 0, " 天"), chg(latest["卓创日龄"] - prev["卓创日龄"], 0, " 天"))
+    metric(row1[2], "周度出栏量", fmt(latest["周出栏"], 0, " 万只"), chg(latest["出栏环比"], 2, "%"))
+    metric(row2[0], "蛋价周均价", fmt(latest["蛋价"], 2, " 元/斤"), chg((latest["蛋价"] / prev["蛋价"] - 1) * 100, 2, "%"))
+    metric(row2[1], "淘鸡周均价", fmt(latest["淘鸡价"], 2, " 元/斤"), chg((latest["淘鸡价"] / prev["淘鸡价"] - 1) * 100, 2, "%"))
+    metric(row2[2], "单斤利润", fmt(latest["单斤利润"], 2, " 元/斤"), chg(latest["单斤利润"] - prev["单斤利润"], 2, " 元"))
 
-# ---------------- 说明 ----------------
-with st.expander("数据口径与更新方法"):
+    st.divider()
     st.markdown(
         f"""
+**本周一句话**　{state}　·　三前置 {ok1}/3、先行征兆 {lead_ok}/3、三道关 {gate_ok}/3
+
+- 出栏 {'↑' if latest['出栏环比'] > 0 else '↓'} {chg(latest['出栏环比'], 2, '%')}，
+  日龄 {'↓' if latest['日龄环比'] < 0 else ('→' if latest['日龄环比'] == 0 else '↑')} {chg(latest['日龄环比'], 1, ' 天')}；
+  只有「日龄降 + 出栏增」才是真去化，缺一个都不算。
+- 利润 {fmt(latest['单斤利润'], 2)} 元/斤，已连续 **{ps} 周** 低于 {PROFIT_LINE:.2f}；
+  传导窗口 {PROFIT_WIN_LO}–{PROFIT_WIN_HI} 周，满 {PROFIT_WIN_HI} 周算「传导期满」。
+- 淘鸡 {fmt(latest['淘鸡价'], 2)} 元/斤，破位线 {TAO_BREAK:.2f}、站稳线 {TAO_LINE:.2f}。
+"""
+    )
+    st.caption("手机端点上方标签页切换板块：② 趋势图表　③ 信号面板　④ 周度数据")
+
+# ---------------- ② 趋势图表 ----------------
+with tab2:
+    st.subheader("淘汰日龄 vs 周度出栏")
+    st.caption("「量增 + 龄降」才是真去化，缺一个都不算。")
+
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Bar(x=d["日期"], y=d["周出栏"], name="周出栏（万只）", marker_color="#ccdae7", opacity=0.9),
+        secondary_y=True,
+    )
+    fig.add_trace(
+        go.Scatter(x=d["日期"], y=d["钢联日龄"], name="钢联日龄", line=dict(color="#1d4e79", width=2)),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(x=d["日期"], y=d["卓创日龄"], name="卓创日龄", line=dict(color="#c08a1e", width=2, dash="dot")),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[d["日期"].min(), d["日期"].max()], y=[AGE_WARN, AGE_WARN], mode="lines", name=f"{AGE_WARN} 天",
+            line=dict(color="#c8453c", dash="dash", width=1.2), hoverinfo="skip",
+        ),
+        secondary_y=False,
+    )
+    fig.update_yaxes(title_text="日龄（天）", secondary_y=False)
+    fig.update_yaxes(title_text="出栏（万只）", secondary_y=True, rangemode="tozero")
+    fig.update_layout(
+        height=420, hovermode="x unified",
+        margin=dict(l=10, r=10, t=40, b=10),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+    )
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
+
+    c_left, c_right = st.columns(2)
+
+    with c_left:
+        st.subheader("单斤利润")
+        st.caption("跌破 1.00 并传导 2–5 周，是拐头的第一个前置条件。")
+        fig2 = go.Figure()
+        fig2.add_trace(go.Scatter(
+            x=d["日期"], y=d["单斤利润"], name="单斤利润（元/斤）",
+            fill="tozeroy", line=dict(color="#1f8a5b", width=1.8),
+        ))
+        fig2.add_hline(y=PROFIT_LINE, line_dash="dash", line_color="#c8453c",
+                       annotation_text=f"{PROFIT_LINE:.2f} 元", annotation_position="top left")
+        fig2.update_layout(height=260, margin=dict(l=10, r=10, t=30, b=10), hovermode="x unified", showlegend=False)
+        st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
+
+    with c_right:
+        st.subheader("蛋价 vs 淘鸡价")
+        st.caption("淘鸡跌得比蛋价快（比值 > 1）＝ 屠宰端接不住。")
+        fig3 = go.Figure()
+        fig3.add_trace(go.Scatter(x=d["日期"], y=d["蛋价"], name="蛋价", line=dict(color="#1d4e79", width=1.8)))
+        fig3.add_trace(go.Scatter(x=d["日期"], y=d["淘鸡价"], name="淘鸡价", line=dict(color="#b5603f", width=1.8)))
+        fig3.add_hline(y=TAO_LINE, line_dash="dash", line_color="#c8453c", annotation_text=f"{TAO_LINE:.2f}")
+        fig3.add_hline(y=TAO_BREAK, line_dash="dot", line_color="#9aa3b0", annotation_text=f"{TAO_BREAK:.2f}")
+        fig3.update_layout(height=260, margin=dict(l=10, r=10, t=30, b=10), hovermode="x unified",
+                           legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
+        st.plotly_chart(fig3, width="stretch", config={"displayModeBar": False})
+
+# ---------------- ③ 信号面板 ----------------
+with tab3:
+    st.subheader("信号面板")
+    st.caption("三组各 3 条：🟢 已亮 · 🟡 部分 · ⚪ 未亮")
+
+    ICON = {"ok": "🟢", "part": "🟡", "gray": "⚪"}
+
+    s1 = [
+        ("① 利润传导", f"利润 {fmt(latest['单斤利润'], 2)} 元/斤，连续 {ps} 周低于 {PROFIT_LINE:.2f}",
+         "已达成 · 传导期满" if ps >= PROFIT_WIN_HI else ("已达成 · 传导中" if ps >= PROFIT_WIN_LO else "未达"),
+         "ok" if c1 else "gray"),
+        ("② 池子释放", f"出栏 {fmt(latest['周出栏'], 0)} 万只，环比 {chg(latest['出栏环比'], 2, '%')}，连增 {up} 周；日龄环比 {chg(latest['日龄环比'], 1, ' 天')}",
+         "已达成 · 量增龄降" if c2 else "未达", "ok" if c2 else "gray"),
+        ("③ 屠宰通道", f"通道比值 {fmt(chan_now, 2)}（阈值 > {CHAN_THR:.1f}），连续 {chan_streak} 周",
+         "已达成 · 连续两周" if c3 else "未达", "ok" if c3 else "gray"),
+    ]
+    s2 = [
+        ("① 通道比值", f"本周 {fmt(chan_now, 2)}，阈值 > {CHAN_THR:.1f}",
+         "已亮" if chan_streak >= 2 else "未亮", "ok" if chan_streak >= 2 else "gray"),
+        ("② 大码蛋占比", f"{fmt(latest['大码占比'], 2)}%，上周 {fmt(prev['大码占比'], 2)}%",
+         "已亮 · 开始下降" if (not pd.isna(latest["大码占比"]) and latest["大码占比"] < prev["大码占比"]) else "未亮 · 大码还在堆",
+         "ok" if (not pd.isna(latest["大码占比"]) and latest["大码占比"] < prev["大码占比"]) else "gray"),
+        ("③ 淘鸡价水平", f"{fmt(latest['淘鸡价'], 2)} 元/斤，距 {TAO_LINE:.2f} {chg(latest['淘鸡价'] - TAO_LINE, 2, ' 元')}",
+         "已亮 · 破位并站稳" if (not pd.isna(latest["淘鸡价"]) and latest["淘鸡价"] < TAO_LINE) else "未亮",
+         "ok" if (not pd.isna(latest["淘鸡价"]) and latest["淘鸡价"] < TAO_LINE) else "gray"),
+    ]
+    s3 = [
+        ("第一关 · 现金线", "蛋价 < 550 天现金成本（全价料×2.45+0.45）",
+         "无数据 · 全价料未填" if pd.isna(latest["全价料"]) else "待判定", "gray"),
+        ("第二关 · 日龄线", f"钢联 {fmt(latest['钢联日龄'], 0)} 天，环比 {chg(latest['日龄环比'], 1, ' 天')}，连续下行 {down} 周",
+         "已亮 · 连续两周下行" if down >= 2 else ("部分 · 下行 1 周" if down == 1 else "未亮"),
+         "ok" if down >= 2 else ("part" if down == 1 else "gray")),
+        ("第三关 · 淘鸡线", f"全国周均 {fmt(latest['淘鸡价'], 2)}，破位线 {TAO_BREAK:.2f}",
+         "已亮 · 破 4.8" if (not pd.isna(latest["淘鸡价"]) and latest["淘鸡价"] < TAO_BREAK) else "未亮",
+         "ok" if (not pd.isna(latest["淘鸡价"]) and latest["淘鸡价"] < TAO_BREAK) else "gray"),
+    ]
+
+    def render_group(col, title, items, total):
+        with col:
+            st.markdown(f"**{title}　{total} / 3**")
+            for name, read, judge, level in items:
+                st.markdown(f"{ICON[level]} **{name}**  \n{judge}　·　{read}")
+
+    gc1, gc2, gc3 = st.columns(3)
+    render_group(gc1, "① 三前置条件", s1, ok1)
+    render_group(gc2, "② 先行征兆", s2, lead_ok)
+    render_group(gc3, "③ 三道关", s3, gate_ok)
+
+    st.divider()
+    st.caption(
+        f"状态判别：**{state}**　·　"
+        f"出栏 {'↑' if latest['出栏环比'] > 0 else '↓'} / 日龄 "
+        f"{'↓' if latest['日龄环比'] < 0 else ('→' if latest['日龄环比'] == 0 else '↑')}"
+        f"　·　只有「日龄降 + 出栏增」才是真去化"
+    )
+
+# ---------------- ④ 周度数据 ----------------
+with tab4:
+    st.subheader("周度数据")
+    tbl = df.tail(table_weeks)[::-1].copy()
+    tbl["日期"] = tbl["日期"].dt.strftime("%Y-%m-%d")
+    tbl = tbl.rename(columns={
+        "周出栏": "周出栏(万只)", "蛋价": "蛋价(元/斤)", "淘鸡价": "淘鸡价(元/斤)",
+        "单斤利润": "单斤利润(元)", "日龄环比": "日龄环比(天)", "出栏环比": "出栏环比(%)",
+    })
+    show_cols = ["日期", "卓创日龄", "钢联日龄", "周出栏(万只)", "蛋价(元/斤)", "淘鸡价(元/斤)",
+                 "单斤利润(元)", "日龄环比(天)", "出栏环比(%)", "通道", "状态"]
+    st.dataframe(
+        tbl[show_cols].style.format({
+            "卓创日龄": "{:.0f}", "钢联日龄": "{:.0f}", "周出栏(万只)": "{:.0f}",
+            "蛋价(元/斤)": "{:.2f}", "淘鸡价(元/斤)": "{:.2f}", "单斤利润(元)": "{:.2f}",
+            "日龄环比(天)": "{:+.0f}", "出栏环比(%)": "{:+.2f}", "通道": "{:.2f}",
+        }, na_rep="—"),
+        hide_index=True, width="stretch", height=430,
+    )
+
+    with st.expander("数据口径与更新方法"):
+        st.markdown(
+            f"""
 **数据来源**：钢联 Mysteel、卓创资讯、同花顺 iFinD，周度口径；单斤利润 = 蛋价 − 自算现金成本。
 
 **阈值**（改 app.py 顶部的常量即可）：利润 {PROFIT_LINE:.2f} 元 · 传导 {PROFIT_WIN_LO}–{PROFIT_WIN_HI} 周 ·
 淘鸡 {TAO_LINE:.2f} / 破位 {TAO_BREAK:.2f} · 日龄警戒 {AGE_WARN} 天 · 通道比值 {CHAN_THR:.1f}。
 
-**更新数据**：替换同目录的 xlsx → 网页自动重新读（或点侧边栏「重新读取 Excel」）。
+**更新数据**：替换同目录的 xlsx → 点侧边栏「重新读取 Excel」。
 线上版本：在 GitHub 仓库里重新上传同名 xlsx，约 1 分钟后自动更新。
 
 **缺口**：`全价料` 列为空时，「第一关 · 现金线」无法自动判定；`通道比值` 列大多为空，本页用
 「淘鸡环比 ÷ 蛋价环比」自动补算。
 """
-    )
+        )
 
 st.divider()
 st.caption("仅供研究参考 · 不构成投资建议")
