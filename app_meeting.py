@@ -1,9 +1,9 @@
 """
-会议纪要 → 网页（Streamlit 版 · 忠实版式）
+会议纪要 → 网页（Streamlit 版 · 左侧目录）
 --------------------------------------------------
-4 个板块：基本面 / 多空池 / 交易策略 / 账户运行情况
-PPT 原始标题与文字全部原样呈现，只做排版。
-自动读取目录中最新的「会议纪要*.pptx」，每周把新 PPT 传上来即自动更新。
+左侧：周次 + 板块 + 品种 三级目录
+右侧：所选周次、所选板块的内容
+要求：标题与原文不改，只做排版；每周上传新的「会议纪要*.pptx」自动进入目录。
 """
 
 import re
@@ -18,51 +18,129 @@ st.set_page_config(page_title="研究中心内部行情策略会", layout="wide"
 
 CSS = """
 <style>
-:root{--ink:#16202c;--ink2:#3d4a5a;--ink3:#7a8698;--line:#dfe5ec;--line2:#eef1f5;
---navy:#12365e;--navy2:#1d4e79;--gold:#a9822f;}
-.block-container{max-width:1120px;padding-top:1.6rem;padding-bottom:3rem;}
-h1,h2,h3,h4,p,td,th{font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;}
-.sheet{background:#fff;border:1px solid #dfe4ea;box-shadow:0 10px 30px rgba(18,32,48,.06);}
-.cover{padding:38px 44px 26px;border-bottom:1px solid var(--line);}
-.cover h1{font-size:30px;line-height:1.3;margin:0 0 22px;font-weight:600;color:var(--navy);}
-.cover-grid{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;}
-.qual{font-size:13px;color:var(--ink2);white-space:pre-line;}
-.maker{font-size:13px;color:var(--ink2);white-space:pre-line;text-align:right;}
-.disclaimer{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);
-font-size:12px;line-height:1.85;color:var(--ink3);}
-.bt{display:flex;align-items:center;gap:10px;margin:26px 0 10px;font-size:16px;
-font-weight:600;color:var(--navy2);letter-spacing:.02em;}
-.bt::before{content:"";width:3px;height:15px;background:var(--navy2);display:inline-block;}
-.tbwrap{overflow-x:auto;}
-table.mt{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13.5px;}
-table.mt th{background:#f3f6f9;color:var(--ink2);font-weight:600;text-align:left;
-padding:9px 12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-font-size:12.5px;letter-spacing:.04em;}
-table.mt td{padding:11px 12px;border-bottom:1px solid var(--line2);vertical-align:top;color:var(--ink2);}
-table.mt td.board{color:var(--navy2);font-weight:600;background:#fafcfe;width:11%;}
-table.mt td.nm{color:var(--ink);font-weight:600;width:18%;}
-table.mt td.nm .st{color:var(--gold);font-weight:400;letter-spacing:2px;font-size:12px;}
-table.mt td.vw{line-height:1.8;}
-table.mt td.goal{color:var(--navy2);font-weight:500;}
-.note{margin:9px 0 0;font-size:12px;color:var(--ink3);}
-.pools{display:flex;gap:20px;flex-wrap:wrap;margin-top:8px;}
-.pool{flex:1 1 320px;border:1px solid var(--line);}
-.pool h4{margin:0;padding:11px 16px;font-size:14px;font-weight:600;color:var(--navy2);
-background:#f3f6f9;border-bottom:1px solid var(--line);}
-.chips{padding:14px 16px 16px;display:flex;flex-wrap:wrap;gap:8px;min-height:90px;}
-.chip{border:1px solid var(--line);padding:5px 10px;font-size:13px;color:var(--ink);background:#fff;white-space:nowrap;}
-.chip .st{color:var(--gold);letter-spacing:2px;margin-left:3px;font-size:12px;}
-.empty{border:1px dashed #cfd8e3;min-height:280px;display:flex;align-items:center;
-justify-content:center;color:var(--ink3);font-size:14px;}
-.foot{padding:14px 0 0;border-top:1px solid var(--line);color:var(--ink3);font-size:11.5px;margin-top:30px;}
-@media (max-width:820px){
- .cover{padding:26px 18px 20px;} .cover h1{font-size:22px;}
- .maker{text-align:left;} .maker br{display:none;}
- .bt{font-size:15px;} .pools{flex-direction:column;}
- table.mt{min-width:0;table-layout:auto;font-size:12px;}
- table.mt td.board{width:1%;white-space:nowrap;}
- table.mt td.nm{width:1%;white-space:nowrap;}
- table.mt th{white-space:nowrap;}
+:root{--side:#20222a;--side2:#2a2d37;--teal:#009688;--top:#393d49;--bg:#f2f3f5;--card:#fff;
+--ink:#333;--ink2:#666;--ink3:#9aa0ab;--line:#e6e8ec;--red:#bf242a;--green:#0a7d63;--gold:#ff5722;}
+.stApp{background:var(--bg);overflow-x:hidden;}
+html,body{overflow-x:hidden;}
+html,body,[class*="css"]{font-family:"Helvetica Neue",Helvetica,"PingFang SC","Microsoft YaHei",Tahoma,Arial,sans-serif;}
+header[data-testid="stHeader"]{background:var(--top) !important;display:none;}
+.block-container{max-width:100%;padding:14px 18px 40px;}
+/* 左侧深色栏 */
+section[data-testid="stSidebar"]{background:var(--side);border-right:0;width:236px !important;min-width:236px !important;max-width:236px !important;}
+section[data-testid="stSidebar"] > div{padding-top:.9rem;}
+section[data-testid="stSidebar"] .block-container{padding:.9rem .9rem 2rem;max-width:100%;}
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+[data-testid="stSidebar"] small{color:rgba(255,255,255,.55) !important;}
+section[data-testid="stSidebar"] p{color:rgba(255,255,255,.8) !important;}
+section[data-testid="stSidebar"] [role="radiogroup"] label p{color:rgba(255,255,255,.8) !important;font-size:13.5px;}
+section[data-testid="stSidebar"] label[data-testid="stRadioOption"] > div > div:first-child{
+background:rgba(255,255,255,.12) !important;border-color:transparent !important;}
+section[data-testid="stSidebar"] label[data-testid="stRadioOption"][data-selected="true"] > div > div:first-child{
+background:var(--teal) !important;}
+section[data-testid="stSidebar"] [data-baseweb="select"] > div{background:#2a2d36 !important;border-color:#3a3e49 !important;color:#fff !important;}
+section[data-testid="stSidebar"] [data-baseweb="select"] *{color:#fff !important;}
+section[data-testid="stSidebar"] hr{border-color:rgba(255,255,255,.08);}
+.sb-brand{display:flex;align-items:center;gap:9px;padding:0 0 10px;margin-bottom:2px;}
+.sb-brand .mark{width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#00b39f,#00796b);
+display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;}
+.sb-brand b{font-size:15px;font-weight:600;color:#fff;line-height:1.2;}
+.sb-brand span{font-size:11px;color:rgba(255,255,255,.5);display:block;}
+.sb-line{height:1px;background:rgba(255,255,255,.08);margin:10px 0 12px;}
+/* 顶部深色条 */
+/* 顶部分段标签 */
+[data-testid="stButtonGroup"]{margin:0 0 10px;}
+[data-testid="stButtonGroup"] button{border-radius:3px !important;border:1px solid #dfe5e9 !important;
+background:#fff !important;color:#4a5962 !important;font-size:13px !important;min-height:32px;}
+[data-testid="stButtonGroup"] button[data-selected="true"],
+[data-testid="stButtonGroup"] button[aria-checked="true"]{background:var(--teal) !important;
+border-color:var(--teal) !important;color:#fff !important;}
+[data-testid="stButtonGroup"] button:hover{border-color:#c7d2d8 !important;color:#222 !important;}
+.topbar{display:flex;align-items:center;gap:10px;background:var(--top);color:rgba(255,255,255,.9);
+border-radius:0;height:52px;padding:0 20px;font-size:14px;margin:-14px -18px 12px;}
+.topbar .sep{color:rgba(255,255,255,.4);}
+.topbar b{color:#fff;font-weight:500;}
+.topbar .r{margin-left:auto;font-size:12px;color:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.16);
+border-radius:3px;padding:2px 9px;}
+/* 彩色分类条 */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+.chipcat{background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;
+box-shadow:0 1px 2px rgba(0,0,0,.03);}
+.chipcat .lab{padding:4px 4px;color:#fff;font-size:12px;font-weight:600;text-align:center;letter-spacing:.04em;}
+.chipcat .val{padding:11px 4px 12px;text-align:center;font-size:22px;font-weight:700;color:#222;line-height:1.15;}
+.chipcat .val small{display:block;font-size:11px;font-weight:400;color:var(--ink3);margin-top:2px;}
+.chipcat.c1 .lab{background:#132b6b;} .chipcat.c2 .lab{background:var(--teal);}
+.chipcat.c3 .lab{background:#6e0000;} .chipcat.c4 .lab{background:#00401c;}
+/* 白色卡片 */
+.card{background:#fff;border:1px solid var(--line);border-radius:6px;margin-bottom:14px;
+box-shadow:0 1px 2px rgba(0,0,0,.03);}
+.card-h{display:flex;align-items:baseline;gap:10px;padding:13px 18px;border-bottom:1px solid #f2f3f5;}
+.card-h h2{margin:0;font-size:15px;font-weight:600;color:#222;line-height:1.25;}
+.card-h .sub{font-size:12px;color:var(--ink3);}
+.card-b{padding:14px 18px 16px;}
+.bt{margin:0 0 10px;font-size:15px;font-weight:600;color:#222;}
+.bt em{font-style:normal;font-size:12px;color:var(--ink3);margin-left:10px;font-weight:400;}
+.cover .meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:12.5px;color:var(--ink2);margin-bottom:10px;}
+.cover .note{margin:0;padding-top:10px;border-top:1px solid #f4f4f4;font-size:11.5px;line-height:1.9;color:var(--ink3);}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.gsep{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);
+margin:2px 0 0;}
+.gsep::before{content:"";width:3px;height:11px;background:var(--teal);}
+.pcard{border:1px solid #edeff2;border-radius:5px;padding:11px 13px;background:#fff;}
+.phead{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;}
+.pname{font-size:13.5px;font-weight:600;color:#222;}
+.stars{font-size:11px;color:var(--gold);letter-spacing:1.5px;white-space:nowrap;}
+.pview{margin:0;font-size:12.5px;line-height:1.75;color:var(--ink2);}
+.tip{margin:12px 0 0;font-size:11.5px;color:var(--ink3);}
+.pools{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.pool{background:#fff;border:1px solid #edeff2;border-radius:5px;overflow:hidden;}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;
+font-size:13px;font-weight:600;border-bottom:1px solid #f2f2f2;}
+.ph .dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:1px;}
+.pb{padding:11px 12px 12px;display:flex;flex-wrap:wrap;gap:7px;}
+.chip{padding:4px 9px;border-radius:4px;font-size:12px;background:#fff;border:1px solid #e6e8ec;}
+.chip i{font-style:normal;font-size:10.5px;letter-spacing:1.5px;margin-left:3px;}
+.bull .ph{color:var(--red);background:#fdf4f3;border-bottom-color:#f7dfdc;} .bull .dot{background:var(--red);}
+.bull .chip i{color:var(--red);} .bull .chip{border-color:#f0d5d1;}
+.bear .ph{color:var(--green);background:#f2faf7;border-bottom-color:#d9ece5;} .bear .dot{background:var(--green);}
+.bear .chip i{color:var(--green);} .bear .chip{border-color:#d5eae2;}
+.desc{font-size:12px;color:var(--ink3);margin:-4px 0 10px;}
+.scard{border:1px solid #edeff2;border-radius:5px;background:#fff;padding:11px 13px;margin-bottom:9px;}
+.shead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:5px;}
+.sname{font-size:13.5px;font-weight:600;color:#222;}
+.tag{font-size:11.5px;color:var(--teal);background:#eff9f7;border:1px solid #cfe9e3;
+padding:2px 8px;border-radius:3px;white-space:nowrap;}
+.srow{display:grid;grid-template-columns:64px 1fr;gap:8px;font-size:12.5px;color:var(--ink2);line-height:1.8;}
+.srow b{font-weight:400;color:var(--ink3);font-size:11.5px;}
+.srow.goal span{color:var(--green);font-weight:600;}
+.skel{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.sk{border:1px dashed #dcdcdc;border-radius:4px;height:110px;display:flex;align-items:center;
+justify-content:center;color:#bbb;font-size:13px;background:#fcfcfc;}
+.tl{display:grid;gap:10px;margin-bottom:14px;}
+.tlc{background:#fff;border:1px solid var(--line);border-left:3px solid var(--teal);
+border-radius:4px;padding:13px 16px;}
+.tld{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink3);margin-bottom:5px;}
+.tld b{color:#374151;font-weight:600;font-size:12.5px;}
+.tlv{margin:0;font-size:13px;line-height:1.85;color:var(--ink2);}
+@media(max-width:860px){
+header[data-testid="stHeader"]{display:flex !important;align-items:center;height:52px;background:var(--top) !important;
+left:0 !important;right:0 !important;width:100% !important;padding:0 8px;}
+header[data-testid="stHeader"]::after{content:"会议纪要";color:#fff;font-size:14px;font-weight:600;
+position:absolute;left:56px;top:13px;white-space:nowrap;}
+header[data-testid="stHeader"] [data-testid="stSidebarCollapseButton"] *{color:#fff !important;fill:#fff !important;}
+header[data-testid="stHeader"] button{color:#fff !important;}
+header[data-testid="stHeader"] svg{fill:#fff !important;color:#fff !important;}
+header[data-testid="stHeader"] [data-testid="stMainMenu"]{display:none !important;}
+header[data-testid="stHeader"] [data-testid="stAppDeployButton"]{display:none !important;}
+.block-container{padding-top:64px;}
+.topbar{display:none;}
+.strip{grid-template-columns:1fr 1fr;gap:8px;} .chipcat .val{font-size:13.5px;}
+.grid,.pools{grid-template-columns:1fr;} .pcard{padding:12px 13px;}
+.pview{font-size:12.8px;} .srow{grid-template-columns:66px 1fr;}
+.skel{grid-template-columns:1fr 1fr;} .sk{height:80px;}
+.cover .meta{display:grid;gap:5px;font-size:12px;}
+.block-container{padding-left:.85rem;padding-right:.85rem;}
+.topbar{padding:0 12px;font-size:12px;} .topbar .r{display:none;}
 }
 </style>
 """
@@ -79,10 +157,13 @@ def split_stars(text):
     return text.strip(), ""
 
 
+def esc(s):
+    return html.escape(str(s or ""))
+
+
 @st.cache_data(show_spinner=False)
-def parse_ppt(path_str, mtime):
+def parse_week(path_str, mtime):
     prs = Presentation(path_str)
-    W = prs.slide_width
     slides = list(prs.slides)
 
     def shapes_text(shapes):
@@ -142,9 +223,7 @@ def parse_ppt(path_str, mtime):
     def notes_of(slide, title):
         out = []
         for t, _, _ in shapes_text(slide.shapes):
-            if t == title:
-                continue
-            if t in ("多头品种池", "空头品种池"):
+            if t == title or t in ("多头品种池", "空头品种池"):
                 continue
             if t.startswith("★") or len(t) < 8:
                 continue
@@ -164,11 +243,11 @@ def parse_ppt(path_str, mtime):
                 if t.startswith("投资咨询业务资格"):
                     cover["qual"] = t
                 elif t.startswith("证监许可"):
-                    cover["qual"] = (cover["qual"] + "\n" + t).strip()
+                    cover["qual"] = (cover["qual"] + " " + t).strip()
                 elif t.startswith("报告制作人"):
                     cover["maker"] = t
                 elif t.startswith("从业资格号") or t.startswith("投资咨询号"):
-                    cover["maker"] = (cover["maker"] + "\n" + t).strip()
+                    cover["maker"] = (cover["maker"] + "  " + t).strip()
                 elif t.startswith("重要提示"):
                     cover["disclaimer"] = t
             continue
@@ -177,7 +256,6 @@ def parse_ppt(path_str, mtime):
             tb = tables_of(slide)
             fund.append({
                 "title": title,
-                "header": tb[0][0] if tb else [],
                 "rows": tb[0][1:] if tb else [],
                 "note": " ".join(notes_of(slide, title)),
             })
@@ -204,7 +282,7 @@ def parse_ppt(path_str, mtime):
                 key = "bull" if x < 5800000 else "bear"
                 pools[key]["items"].append((name, best, y))
             for k in ("bull", "bear"):
-                pools[k]["items"].sort(key=lambda p: (p[2],))
+                pools[k]["items"].sort(key=lambda p: p[2])
                 pools[k]["items"] = [(n, s) for n, s, _ in pools[k]["items"]]
             pools["note"] = " ".join(notes_of(slide, title))
         elif title.startswith("交易策略"):
@@ -212,169 +290,268 @@ def parse_ppt(path_str, mtime):
             strat.append({
                 "title": title,
                 "desc": " ".join(notes_of(slide, title)),
-                "header": tb[0][0] if tb else [],
                 "rows": tb[0][1:] if tb else [],
             })
         elif "账户" in title:
             empty = True
 
-    return cover, fund, pools, strat, empty
+    return {"cover": cover, "fund": fund, "pools": pools, "strat": strat, "empty": empty}
 
 
-def find_ppt(data_dir):
+def week_date(name):
+    m = re.search(r"(\d{8})", name)
+    if m:
+        d = m.group(1)
+        return f"{d[:4]}-{d[4:6]}-{d[6:8]}"
+    return ""
+
+
+def load_weeks(data_dir):
     files = sorted(
         Path(data_dir).glob("会议纪要*.pptx"),
-        key=lambda p: (p.stat().st_mtime, p.name),
+        key=lambda p: (week_date(p.name), p.name),
         reverse=True,
     )
-    return files[0] if files else None
+    weeks = []
+    for f in files:
+        data = parse_week(str(f), f.stat().st_mtime)
+        data["date"] = week_date(f.name) or f.stem
+        data["file"] = f.name
+        weeks.append(data)
+    return weeks
 
 
-def esc(s):
-    return html.escape(s or "")
-
-
-def render_table(header, rows, col_widths):
-    if not header or not rows:
-        return ""
-    cols = "".join(f'<col style="width:{w}">' for w in col_widths)
-    th = "".join(f"<th>{esc(h)}</th>" for h in header)
-    body = []
-    n = len(header)
-    if n >= 3 and "板块" in header[0]:
-        # 第一列：空单元格视为上一板块的续行，合并成一条
-        groups, cur = [], None
-        for r in rows:
+def records(week):
+    """把一周的基本面压平成 品种记录。"""
+    out = []
+    for b in week["fund"]:
+        board = ""
+        for r in b["rows"]:
+            if len(r) < 2:
+                continue
             if r[0]:
-                cur = [r[0], [r]]
-                groups.append(cur)
-            elif cur is not None:
-                cur[1].append(r)
-            else:
-                cur = ["", [r]]
-                groups.append(cur)
-        for board, grp in groups:
-            span = len(grp)
-            for k, r in enumerate(grp):
-                name, stars = split_stars(r[1] if len(r) > 1 else "")
-                view = " ".join(c for c in r[2:] if c)
-                if k == 0:
-                    body.append(
-                        f'<tr><td class="board" rowspan="{span}">{esc(board)}</td>'
-                        f'<td class="nm">{esc(name)}<span class="st">{esc(stars)}</span></td>'
-                        f'<td class="vw">{esc(view)}</td></tr>'
-                    )
-                else:
-                    body.append(
-                        f'<tr><td class="nm">{esc(name)}<span class="st">{esc(stars)}</span></td>'
-                        f'<td class="vw">{esc(view)}</td></tr>'
-                    )
-    elif "目标" in header[-1] or "风险" in header[-1]:
-        for r in rows:
-            cells = list(r) + [""] * (n - len(r))
-            body.append(
-                "<tr>"
-                f'<td class="nm">{esc(cells[0])}</td>'
-                + "".join(f"<td>{esc(c)}</td>" for c in cells[1:-1])
-                + f'<td class="goal">{esc(cells[-1])}</td></tr>'
-            )
-    else:
-        for r in rows:
-            cells = list(r) + [""] * (n - len(r))
-            body.append("<tr>" + "".join(f"<td>{esc(c)}</td>" for c in cells) + "</tr>")
+                board = r[0]
+            name, stars = split_stars(r[1])
+            view = " ".join(c for c in r[2:] if c)
+            out.append({
+                "block": b["title"], "board": board,
+                "name": name, "stars": stars, "view": view,
+            })
+    return out
+
+
+def fund_html(block, only=None):
+    parts = ['<div class="grid">']
+    board, last = "", None
+    for r in block["rows"]:
+        if len(r) < 2:
+            continue
+        if r[0]:
+            board = r[0]
+        name, stars = split_stars(r[1])
+        if only and name != only:
+            continue
+        if board and board != last:
+            last = board
+            parts.append(f'<div class="gsep">{esc(board)}</div>')
+        view = " ".join(c for c in r[2:] if c)
+        parts.append(
+            f'<article class="pcard"><div class="phead">'
+            f'<span class="pname">{esc(name)}</span>'
+            f'<span class="stars">{esc(stars)}</span></div>'
+            f'<p class="pview">{esc(view)}</p></article>'
+        )
+    parts.append("</div>")
+    return "".join(parts)
+
+
+def pool_html(key, p):
+    chips = "".join(
+        f'<span class="chip">{esc(n)}<i>{esc(s)}</i></span>' for n, s in p["items"]
+    )
     return (
-        f'<div class="tbwrap"><table class="mt"><colgroup>{cols}</colgroup>'
-        f"<thead><tr>{th}</tr></thead><tbody>{''.join(body)}</tbody></table></div>"
+        f'<div class="pool {key}"><div class="ph">'
+        f'<span><span class="dot"></span>{esc(p["label"])}</span>'
+        f"<span>{len(p['items'])}</span></div>"
+        f'<div class="pb">{chips}</div></div>'
+    )
+
+
+def strategy_html(s):
+    parts = []
+    for r in s["rows"]:
+        cells = list(r) + [""] * (4 - len(r))
+        parts.append(
+            f'<div class="scard"><div class="shead">'
+            f'<span class="sname">{esc(cells[0])}</span>'
+            f'<span class="tag">{esc(cells[1])}</span></div>'
+            f'<div class="srow"><b>操作要点</b><span>{esc(cells[2])}</span></div>'
+            f'<div class="srow goal"><b>目标 / 风险</b><span>{esc(cells[3])}</span></div>'
+            f"</div>"
+        )
+    return "".join(parts)
+
+
+def topbar(week, section):
+    st.markdown(
+        f'<div class="topbar"><b>研究中心内部行情策略会</b>'
+        f'<span class="r">{esc(week["date"])} · 内部资料</span></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def strip(week, section):
+    names = sorted({r["name"] for r in records(week)})
+    bull = len(week["pools"].get("bull", {}).get("items", [])) if week["pools"] else 0
+    bear = len(week["pools"].get("bear", {}).get("items", [])) if week["pools"] else 0
+    srows = sum(len(s["rows"]) for s in week["strat"])
+    cells = [
+        ("c1", "基本面", f"{len(names)} 个品种", "股指 · 油脂 · 化工"),
+        ("c2", "多空池", f"{bull} / {bear}", "多头 / 空头"),
+        ("c3", "交易策略", f"{srows} 条", "股指 · 时序 · 套利"),
+        ("c4", "账户运行情况", "—", "本期待补充"),
+    ]
+    html_parts = "".join(
+        f'<div class="chipcat {c}"><div class="lab">{esc(t)}</div>'
+        f'<div class="val">{esc(v)}<small>{esc(s)}</small></div></div>'
+        for c, t, v, s in cells
+    )
+    st.markdown(f'<div class="strip">{html_parts}</div>', unsafe_allow_html=True)
+
+
+def hero(week):
+    c = week["cover"]
+    metas = [c["qual"]] + [x for x in re.split(r"\s{2,}", c["maker"]) if x]
+    meta_html = "".join(f"<span>{esc(x)}</span>" for x in metas if x)
+    st.markdown(
+        f"""<div class="card cover">
+<div class="card-h"><h2>{esc(c['title'] or '会议纪要')}</h2><span class="sub">{esc(week['date'])}</span></div>
+<div class="card-b"><div class="meta">{meta_html}</div>
+<p class="note">{esc(c['disclaimer'])}</p></div>
+</div>""",
+        unsafe_allow_html=True,
     )
 
 
 def main():
     data_dir = Path(__file__).parent
-    ppt = find_ppt(data_dir)
+    st.html(CSS)
+    weeks = load_weeks(data_dir)
 
-    st.markdown(CSS, unsafe_allow_html=True)
-    if ppt is None:
-        st.warning("目录里没有找到「会议纪要*.pptx」，把 PPT 上传到仓库根目录即可。")
-        return
+    if weeks:
+        topbar(weeks[0], "")
+    section = st.pills(
+        "板块", ["基本面", "多空池", "交易策略", "账户运行情况"],
+        default="基本面", label_visibility="collapsed",
+    ) or "基本面"
 
-    with st.spinner("正在读取会议纪要…"):
-        cover, fund, pools, strat, empty = parse_ppt(str(ppt), ppt.stat().st_mtime)
+    # ---------------- 左侧目录 ----------------
+    with st.sidebar:
+        st.html(
+            '<div class="sb-brand"><div class="mark">研</div>'
+            '<div><b>行情策略会</b><span>研究中心 · 会议纪要</span></div></div>'
+        )
 
-    # ---------- 封面 ----------
-    st.markdown(
-        f"""<div class="sheet cover">
-<h1>{esc(cover['title'] or '会议纪要')}</h1>
-<div class="cover-grid">
-<div class="qual">{esc(cover['qual'])}</div>
-<div class="maker">{esc(cover['maker'])}</div>
-</div>
-<div class="disclaimer">{esc(cover['disclaimer'])}</div>
-</div>""",
-        unsafe_allow_html=True,
-    )
+        if not weeks:
+            st.info("目录里还没有「会议纪要*.pptx」，上传后会自动出现。")
+            return
 
-    tabs = st.tabs(["基本面", "多空池", "交易策略", "账户运行情况"])
+        labels = [f"{w['date']}" + ("　最新" if i == 0 else "") for i, w in enumerate(weeks)]
+        widx = st.selectbox("周次", range(len(weeks)), format_func=lambda i: labels[i])
 
-    with tabs[0]:
-        if not fund:
-            st.markdown('<p class="note">本期基本面暂无内容。</p>', unsafe_allow_html=True)
-        for b in fund:
-            st.markdown(f'<div class="bt">{esc(b["title"])}</div>', unsafe_allow_html=True)
+
+        week = weeks[widx]
+        names = sorted({r["name"] for r in records(week)})
+        pick = None
+        if section == "基本面":
+            st.html('<div class="sb-line"></div>')
+            opts = ["全部品种"] + names
+            sel = st.selectbox("品种", opts, index=0)
+            pick = None if sel == "全部品种" else sel
+            if pick and len(weeks) > 1:
+                st.caption("选择单个品种时，右侧会按周列出它的观点变化。")
+
+        st.html('<div class="sb-line"></div>')
+        st.caption(f"共 {len(weeks)} 期 · 上传新 PPT 自动更新")
+
+    # ---------------- 右侧内容 ----------------
+    hero(week)
+
+    if section == "基本面":
+        if pick and len(weeks) > 1:
             st.markdown(
-                render_table(b["header"], b["rows"], ["11%", "18%", "71%"]),
+                f'<div class="bt">{esc(pick)} · 按周追踪<em>共 {len(weeks)} 期</em></div>',
                 unsafe_allow_html=True,
             )
-            if b["note"]:
-                st.markdown(f'<p class="note">{esc(b["note"])}</p>', unsafe_allow_html=True)
-
-    with tabs[1]:
-        if pools:
-            st.markdown('<div class="bt">多空池</div>', unsafe_allow_html=True)
-            cols = st.columns(2)
-            for col, key in zip(cols, ["bull", "bear"]):
-                p = pools.get(key)
-                if not p:
-                    continue
-                chips = "".join(
-                    f'<span class="chip">{esc(n)}<span class="st">{esc(s)}</span></span>'
-                    for n, s in p["items"]
-                )
-                with col:
-                    st.markdown(
-                        f'<div class="pool"><h4>{esc(p["label"])}</h4>'
-                        f'<div class="chips">{chips}</div></div>',
-                        unsafe_allow_html=True,
-                    )
-            if pools.get("note"):
-                st.markdown(
-                    f'<p class="note">{esc(pools["note"])}</p>', unsafe_allow_html=True
-                )
+            items = []
+            for w in weeks:
+                for rec in records(w):
+                    if rec["name"] == pick:
+                        items.append((w["date"], rec))
+                        break
+            cards = "".join(
+                f'<div class="tlc"><div class="tld"><b>{esc(d)}</b>'
+                f'<span>{esc(r["board"])}</span>'
+                f'<span class="stars">{esc(r["stars"])}</span></div>'
+                f'<p class="tlv">{esc(r["view"])}</p></div>'
+                for d, r in items
+            )
+            st.markdown(f'<div class="tl">{cards}</div>', unsafe_allow_html=True)
         else:
-            st.markdown('<p class="note">本期多空池暂无内容。</p>', unsafe_allow_html=True)
-
-    with tabs[2]:
-        if not strat:
-            st.markdown('<p class="note">本期交易策略暂无内容。</p>', unsafe_allow_html=True)
-        for s in strat:
-            st.markdown(f'<div class="bt">{esc(s["title"])}</div>', unsafe_allow_html=True)
-            if s["desc"]:
-                st.markdown(
-                    f'<p class="note" style="margin:0 0 8px">{esc(s["desc"])}</p>',
-                    unsafe_allow_html=True,
+            for b in week["fund"]:
+                shown = b["rows"]
+                if pick:
+                    shown = [r for r in b["rows"]
+                             if len(r) > 1 and split_stars(r[1])[0] == pick]
+                    if not shown:
+                        continue
+                note = f'<p class="tip">{esc(b["note"])}</p>' if b["note"] else ""
+                st.html(
+                    f'<div class="card"><div class="card-h"><h2>{esc(b["title"])}</h2>'
+                    f'<span class="sub">{len(shown)} 个品种</span></div>'
+                    f'<div class="card-b">{fund_html(b, only=pick)}{note}</div></div>'
                 )
-            st.markdown(
-                render_table(s["header"], s["rows"], ["19%", "18%", "43%", "20%"]),
-                unsafe_allow_html=True,
+
+    elif section == "多空池":
+        if week["pools"]:
+            inner = (
+                '<div class="pools">'
+                + pool_html("bull", week["pools"]["bull"])
+                + pool_html("bear", week["pools"]["bear"])
+                + "</div>"
+            )
+            tip = (f'<p class="tip">{esc(week["pools"]["note"])}</p>'
+                   if week["pools"].get("note") else "")
+            st.html(
+                f'<div class="card"><div class="card-h"><h2>多空池</h2>'
+                f'<span class="sub">本周多空品种</span></div>'
+                f'<div class="card-b">{inner}{tip}</div></div>'
+            )
+        else:
+            st.markdown('<p class="tip">本期多空池暂无内容。</p>', unsafe_allow_html=True)
+
+    elif section == "交易策略":
+        if not week["strat"]:
+            st.markdown('<p class="tip">本期交易策略暂无内容。</p>', unsafe_allow_html=True)
+        for s in week["strat"]:
+            desc = f'<p class="desc">{esc(s["desc"])}</p>' if s["desc"] else ""
+            st.html(
+                f'<div class="card"><div class="card-h"><h2>{esc(s["title"])}</h2></div>'
+                f'<div class="card-b">{desc}{strategy_html(s)}</div></div>'
             )
 
-    with tabs[3]:
-        st.markdown('<div class="bt">账户运行情况</div>', unsafe_allow_html=True)
-        st.markdown('<div class="empty">—</div>', unsafe_allow_html=True)
-
-    st.markdown(
-        '<div class="foot">本页由会议 PPT 排版生成，文字与观点未做改动。</div>',
-        unsafe_allow_html=True,
-    )
+    else:
+        st.html(
+            '<div class="card"><div class="card-h"><h2>账户运行情况</h2>'
+            '<span class="sub">本期待补充</span></div><div class="card-b"><div class="skel">'
+            + "".join('<div class="sk">—</div>' for _ in range(4))
+            + "</div></div></div>"
+        )
 
 
 main()
+
+
+
+
+
