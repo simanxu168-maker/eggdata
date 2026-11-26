@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>会议纪要 · 研究中心内部行情策略会</title>
+<title>研究中心内部行情策略会</title>
 <style>
-  :root{
+:root{
     --side:#20222a; --side2:#2a2d37; --head:#393d49;
     --teal:#009688; --teal2:#00897b; --orange:#ff5722;
     --page:#f2f3f5; --card:#fff; --line:#e6e8ec;
@@ -45,7 +45,7 @@
     border-bottom:1px solid rgba(255,255,255,.06);}
   .brand i{width:16px;height:16px;background:linear-gradient(135deg,var(--orange),#ff8a65);
     border-radius:3px;display:inline-block;transform:rotate(45deg);}
-  .brand b{font-size:14px;font-weight:600;letter-spacing:.04em;}
+  .brand b{font-size:12.5px;font-weight:600;letter-spacing:.01em;line-height:1.35;}
   .grp{padding:12px 0 2px;}
   .grp-t{font-size:11.5px;color:rgba(255,255,255,.42);letter-spacing:.1em;padding:0 16px 6px;}
   .item{display:flex;align-items:center;gap:9px;height:42px;padding:0 16px;color:rgba(255,255,255,.74);
@@ -53,7 +53,9 @@
     transition:background .15s,color .15s;}
   .item:hover{background:var(--side2);color:#fff;}
   .item.on{background:var(--teal);color:#fff;font-weight:600;}
-  .item .ic{width:14px;text-align:center;font-size:12px;opacity:.85;}
+  .item .ic{display:none;}
+  .item::before{content:"";flex:0 0 auto;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.34);}
+  .item.on::before{background:#fff;}
   .item .cnt{margin-left:auto;font-size:11px;color:rgba(255,255,255,.45);}
   .item.on .cnt{color:rgba(255,255,255,.8);}
   .wk{height:38px;font-size:12.5px;}
@@ -71,16 +73,26 @@
   .tile .h{height:26px;display:flex;align-items:center;justify-content:center;color:#fff;
     font-size:12px;font-weight:600;letter-spacing:.04em;}
   .tile .b{padding:12px 10px 14px;text-align:center;}
-  .tile .v{font-size:22px;font-weight:700;line-height:1.15;}
+  .tile .v{font-size:23px;font-weight:700;line-height:1.15;letter-spacing:-.02em;}
   .tile .s{font-size:11.5px;color:var(--txt3);margin-top:2px;}
   .t1 .h{background:#132b6b;} .t2 .h{background:var(--teal);}
   .t3 .h{background:#6e0000;} .t4 .h{background:#00401c;}
 
-  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
-  .tab{border:1px solid var(--line);background:#fff;color:var(--txt2);font-size:13px;
-    padding:8px 18px;border-radius:4px;cursor:pointer;transition:.15s;}
-  .tab:hover{color:var(--teal);border-color:#bcd9d4;}
-  .tab.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600;}
+  .tabs{display:inline-flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;background:#fff;
+    border:1px solid var(--line);border-radius:8px;padding:5px;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .tab{display:flex;align-items:center;gap:7px;border:0;background:transparent;color:#4a5560;font-size:13.5px;
+    padding:9px 16px;border-radius:6px;cursor:pointer;transition:.15s;line-height:1;}
+  .tab .ti{display:none;}
+  .tab:hover{background:#f1f7f6;color:var(--teal);}
+  .tab.on{background:var(--teal);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(0,150,136,.3);}
+  .tab.on .ti{opacity:1;}
+  .tab .tn{font-style:normal;font-size:11px;line-height:1;padding:3px 6px;border-radius:8px;
+    background:#f1f3f5;color:#8b939d;}
+  .tab.on .tn{background:rgba(255,255,255,.22);color:#fff;}
+
+  .fab{position:fixed;right:14px;bottom:18px;z-index:70;display:none;align-items:center;gap:7px;
+    background:var(--teal);color:#fff;border:0;border-radius:24px;padding:12px 16px;font-size:13.5px;
+    font-weight:600;box-shadow:0 6px 20px rgba(0,150,136,.45);}
 
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
     box-shadow:0 1px 2px rgba(0,0,0,.03);margin-bottom:14px;}
@@ -98,7 +110,10 @@
     line-height:1.9;color:#9aa4ac;}
 
   /* 品种 pill */
-  .pills{display:flex;flex-wrap:nowrap;gap:7px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin;}
+  .pills{display:flex;flex-wrap:nowrap;gap:7px;margin:0;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin;flex:1;}
+  .pillbar{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+    border-radius:8px;padding:8px 12px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);}
+  .plab{flex:0 0 auto;font-size:12px;color:#98a2ae;letter-spacing:.06em;}
   .pill{flex:0 0 auto;border:1px solid #dfe3e7;background:#fff;color:#4a5560;font-size:12.5px;padding:7px 14px;
     border-radius:4px;cursor:pointer;transition:.15s;}
   .pill:hover{border-color:#bcd9d4;color:var(--teal);}
@@ -119,7 +134,11 @@
   .pool .ph{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;
     font-size:13px;font-weight:600;}
   .pool .pb{padding:11px 12px 12px;display:flex;flex-wrap:wrap;gap:7px;}
-  .chip{border:1px solid #e6e8ec;border-radius:4px;padding:4px 9px;font-size:12px;}
+  .chip{border:1px solid #e6e8ec;border-radius:4px;padding:4px 9px;font-size:12px;background:#fff;
+    font-family:inherit;cursor:pointer;transition:all .15s;line-height:1.5;}
+  .chip:hover{border-color:var(--teal);color:var(--teal);background:#f4fbfa;
+    box-shadow:0 1px 4px rgba(0,150,136,.16);}
+  .chip:active{transform:translateY(1px);}
   .chip i{font-style:normal;font-size:10.5px;letter-spacing:1.5px;margin-left:3px;}
   .pool.bull .ph{background:#fdf4f3;color:var(--red);border-bottom:1px solid #f7dfdc;}
   .pool.bull .chip{border-color:#f0d5d1;} .pool.bull .chip i{color:var(--red);}
@@ -145,8 +164,9 @@
   .rail{display:grid;gap:14px;}
   .rail .card{margin:0;}
   .rail .card-b{padding:12px 14px 14px;}
-  .rj{display:flex;align-items:center;justify-content:space-between;padding:6px 0;
-    border-bottom:1px dashed #f0f1f3;font-size:12px;color:var(--txt2);}
+  .rj{display:flex;align-items:center;justify-content:space-between;padding:6px 2px;
+    cursor:pointer;border-radius:3px;border-bottom:1px dashed #f0f1f3;font-size:12px;color:var(--txt2);}
+  .rj:hover{background:#f6faf9;}
   .rj:last-child{border-bottom:0;}
   .rj b{font-weight:600;color:#222;font-size:12.5px;}
   .rj i{font-style:normal;letter-spacing:1.5px;font-size:10.5px;}
@@ -162,12 +182,17 @@
     .rail{grid-template-columns:1fr 1fr;}
   }
   @media (max-width:820px){
-    .side{transform:translateX(-100%);transition:transform .22s;width:240px;}
-    .side.open{transform:none;box-shadow:8px 0 24px rgba(0,0,0,.24);}
+    .side{transform:translateX(-100%);transition:transform .22s;width:250px;z-index:80;}
+    .side.open{transform:none;box-shadow:8px 0 26px rgba(0,0,0,.3);}
     .main{margin-left:0;padding:12px;}
     .topbar{left:0;}
+    .fab{display:flex;}
+    .burger{width:34px;height:32px;padding:6px;background:rgba(0,150,136,.92);border-radius:6px;
+      justify-content:center;gap:4px;}
+    .burger span{background:#fff;}
     .search{display:none;}
     .topbar h1 small{display:none;}
+    .topbar h1{font-size:13px;}
     .strip{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px;}
     .tile .h{height:21px;font-size:10.5px;letter-spacing:0;}
     .tile .b{padding:8px 2px 9px;}
@@ -177,7 +202,8 @@
     .pools{grid-template-columns:1fr;}
     .rail{grid-template-columns:1fr;}
     .skel{grid-template-columns:1fr 1fr;}
-    .tabs{gap:6px;} .tab{padding:7px 13px;font-size:12.5px;flex:1 1 40%;}
+    .tabs{gap:3px;padding:4px;width:100%;box-sizing:border-box;} .tab{flex:1 1 44%;justify-content:center;padding:9px 6px;font-size:12.5px;}
+    .tab .tn{display:none;}
     .info{padding:14px 15px;} .info h1{font-size:18px;margin-bottom:8px;}
     .info .meta{font-size:11.5px;gap:2px 14px;}
     .info .note{font-size:10.5px;line-height:1.8;margin-top:9px;padding-top:8px;}
@@ -190,272 +216,245 @@
 
 <div class="topbar">
   <div class="burger" onclick="document.querySelector('.side').classList.toggle('open')"><span></span><span></span><span></span></div>
-  <h1>会议纪要<small>研究中心 · 内部行情策略会</small></h1>
+  <h1>研究中心内部行情策略会<small id="hdate">每周纪要</small></h1>
   <div class="search"><input id="q" placeholder="搜索品种，如：菜粕" oninput="filterByName(this.value)"></div>
-  <div class="topdate">2026-11-23</div>
+  <div class="topdate" id="topdate"></div>
 </div>
 
 <aside class="side">
-  <div class="brand"><i></i><b>会议纪要</b></div>
-
+  <div class="brand"><i></i><b>研究中心内部行情策略会</b></div>
   <div class="grp">
     <div class="grp-t">目 录</div>
-    <button class="item on" data-p="p1"><span class="ic">◈</span>基本面<span class="cnt">22</span></button>
-    <button class="item" data-p="p2"><span class="ic">◑</span>多空池<span class="cnt">23</span></button>
-    <button class="item" data-p="p3"><span class="ic">◎</span>交易策略<span class="cnt">7</span></button>
+    <button class="item" data-p="p3"><span class="ic">◎</span>策略超市<span class="cnt" id="c3"></span></button>
+    <button class="item on" data-p="p1"><span class="ic">◈</span>品种观点<span class="cnt" id="c1"></span></button>
+    <button class="item" data-p="p2"><span class="ic">◑</span>品种多空池<span class="cnt" id="c2"></span></button>
     <button class="item" data-p="p4"><span class="ic">▤</span>账户运行情况<span class="cnt">—</span></button>
   </div>
-
   <div class="grp">
     <div class="grp-t">周 次</div>
-    <button class="item wk on">2026-11-23</button>
-    <button class="item wk">2026-11-16</button>
-    <button class="item wk">2026-11-09</button>
+    <div id="weeks"></div>
   </div>
-
   <div class="side-foot">渤海期货 · 研究中心<br>每周更新，上传 PPT 自动生成</div>
 </aside>
 
+<button class="fab" onclick="document.querySelector('.side').classList.toggle('open')">☰ 目录</button>
+
 <main class="main">
   <div class="col-main">
-
-    <div class="strip">
-      <div class="tile t1"><div class="h">覆盖品种</div><div class="b"><div class="v">22</div><div class="s">基本面跟踪</div></div></div>
-      <div class="tile t2"><div class="h">多头池</div><div class="b"><div class="v" style="color:#009688">10</div><div class="s">看多品种</div></div></div>
-      <div class="tile t3"><div class="h">空头池</div><div class="b"><div class="v" style="color:#bf242a">13</div><div class="s">看空品种</div></div></div>
-      <div class="tile t4"><div class="h">交易策略</div><div class="b"><div class="v" style="color:#0a7d63">7</div><div class="s">在跟策略</div></div></div>
-    </div>
-
-    <div class="card info">
-      <h1>研究中心内部行情策略会</h1>
-      <div class="meta">
-        <span>投资咨询业务资格：证监许可【XX】XXX号</span>
-        <span>报告制作人：XX</span>
-        <span>从业资格号：XXXXX</span>
-        <span>投资咨询号：XXXX</span>
-      </div>
-      <p class="note">重要提示：本报告非期货交易咨询业务项下服务，其中的观点和信息仅供参考，不构成任何投资建议。在任何情况下，本公司不会因为关注、收到或阅读本报告内容而视相关人员为客户；期市有风险，交易需谨慎。</p>
-    </div>
-
+    <div class="strip" id="strip"></div>
     <div class="tabs">
-      <button class="tab on" data-p="p1">基本面</button>
-      <button class="tab" data-p="p2">多空池</button>
-      <button class="tab" data-p="p3">交易策略</button>
-      <button class="tab" data-p="p4">账户运行情况</button>
+      <button class="tab" data-p="p3"><span class="ti">◎</span>策略超市<em class="tn" id="t3"></em></button>
+      <button class="tab on" data-p="p1"><span class="ti">◈</span>品种观点<em class="tn" id="t1"></em></button>
+      <button class="tab" data-p="p2"><span class="ti">◑</span>品种多空池<em class="tn" id="t2"></em></button>
+      <button class="tab" data-p="p4"><span class="ti">▤</span>账户运行情况</button>
     </div>
-
-    <div class="pills" id="pills">
-      <button class="pill on" data-f="全部品种">全部品种</button>
-      <button class="pill" data-f="上证50">上证50</button>
-      <button class="pill" data-f="沪深300">沪深300</button>
-      <button class="pill" data-f="中证1000">中证1000</button>
-      <button class="pill" data-f="中证500">中证500</button>
-      <button class="pill" data-f="黄金">黄金</button>
-      <button class="pill" data-f="白银">白银</button>
-      <button class="pill" data-f="天然橡胶">天然橡胶</button>
-      <button class="pill" data-f="20号胶">20号胶</button>
-      <button class="pill" data-f="合成橡胶">合成橡胶</button>
-      <button class="pill" data-f="豆粕">豆粕</button>
-      <button class="pill" data-f="菜粕">菜粕</button>
-      <button class="pill" data-f="棕榈油">棕榈油</button>
-      <button class="pill" data-f="豆油">豆油</button>
-      <button class="pill" data-f="菜油">菜油</button>
-      <button class="pill" data-f="PX">PX</button>
-      <button class="pill" data-f="原油">原油</button>
-      <button class="pill" data-f="乙二醇">乙二醇</button>
-      <button class="pill" data-f="PTA">PTA</button>
-      <button class="pill" data-f="甲醇">甲醇</button>
-      <button class="pill" data-f="PE">PE</button>
-      <button class="pill" data-f="烧碱">烧碱</button>
-      <button class="pill" data-f="PVC">PVC</button>
-    </div>
-
-    <!-- 基本面 -->
-    <section class="panel on" id="p1">
-      <div class="card" data-block>
-        <div class="card-h"><h2>基本面 · 股指、橡胶</h2><span class="sub">9 个品种</span></div>
-        <div class="card-b">
-          <div class="grid3">
-            <div class="kcard" data-name="上证50"><div class="khead"><span class="kname">上证50</span><span class="stars">★</span><span class="kboard">股指</span></div><p class="kview">国家队护盘资金超买。</p></div>
-            <div class="kcard" data-name="沪深300"><div class="khead"><span class="kname">沪深300</span><span class="stars">★</span><span class="kboard">股指</span></div><p class="kview">沪深300股债风险溢价性价比高。</p></div>
-            <div class="kcard" data-name="中证1000"><div class="khead"><span class="kname">中证1000</span><span class="stars">★★★</span><span class="kboard">股指</span></div><p class="kview">中证1000流动性超卖。</p></div>
-            <div class="kcard" data-name="中证500"><div class="khead"><span class="kname">中证500</span><span class="stars">★★</span><span class="kboard">股指</span></div><p class="kview">中证500：流动性超卖。</p></div>
-            <div class="kcard" data-name="黄金"><div class="khead"><span class="kname">黄金</span><span class="stars">★★</span><span class="kboard">贵金属</span></div><p class="kview">实际利率和通胀预期压制，周五成交量激增库存不变，下游需求有恢复可能。</p></div>
-            <div class="kcard" data-name="白银"><div class="khead"><span class="kname">白银</span><span class="stars">★★</span><span class="kboard">贵金属</span></div><p class="kview">实际利率和通胀预期压制，光伏需求用银占总成本下降</p></div>
-            <div class="kcard" data-name="天然橡胶"><div class="khead"><span class="kname">天然橡胶</span><span class="stars">★★★</span><span class="kboard">橡胶</span></div><p class="kview">低库存、减产预期</p></div>
-            <div class="kcard" data-name="20号胶"><div class="khead"><span class="kname">20号胶</span><span class="stars">★★★</span><span class="kboard">橡胶</span></div><p class="kview">超低库存、减产预期</p></div>
-            <div class="kcard" data-name="合成橡胶"><div class="khead"><span class="kname">合成橡胶</span><span class="stars">★</span><span class="kboard">橡胶</span></div><p class="kview">跟随原油大幅波动</p></div>
-          </div>
-          <p class="note">品种后★即为看空， ★为看多，星星数量代表强烈程度</p>
-        </div>
-      </div>
-
-      <div class="card" data-block>
-        <div class="card-h"><h2>基本面 · 油脂油料</h2><span class="sub">5 个品种</span></div>
-        <div class="card-b">
-          <div class="grid3">
-            <div class="kcard" data-name="豆粕"><div class="khead"><span class="kname">豆粕</span><span class="stars">★★</span><span class="kboard">油脂油料</span></div><p class="kview">底部震旦，偏中性。国内高库存与美豆丰产压制盘面，中美俄会晤未传出对农产品的实质性利多，美豆库存紧平衡，南美播种正常推进，短期缺乏驱动，震荡为主。</p></div>
-            <div class="kcard" data-name="菜粕"><div class="khead"><span class="kname">菜粕</span><span class="stars">★★★</span><span class="kboard">油脂油料</span></div><p class="kview">底部震荡，相对估值均较低。水产进入四季度淡季，需求转弱压制盘面，库存连续两周累积；加拿大旧作出口尾声、到港短期减少及油厂开机下降带来低库存与高基差支撑，但更多是托底而非向上驱动，供需两淡下以震荡为主。盘面在2100—2150区间存在较强的前低支撑共识。</p></div>
-            <div class="kcard" data-name="棕榈油"><div class="khead"><span class="kname">棕榈油</span><span class="stars">★★</span><span class="kboard">油脂油料</span></div><p class="kview">风险偏好收紧下，基本面内外库存压力较大，但前期快速下跌使得动态估值（偏差方面）已经比基本面反应的估值低，关注棕榈油后续止跌企稳（警惕原油破位带来的利空）。</p></div>
-            <div class="kcard" data-name="豆油"><div class="khead"><span class="kname">豆油</span><span class="stars">★★★</span><span class="kboard">油脂油料</span></div><p class="kview">收储兑现托底近月、榨利深亏，但高库存且去库缓慢压制反弹高度，目前豆油基本反应基本面情况，相对估值偏高。</p></div>
-            <div class="kcard" data-name="菜油"><div class="khead"><span class="kname">菜油</span><span class="stars">★★★</span><span class="kboard">油脂油料</span></div><p class="kview">基差坚挺，低库存格局对现货有托底，但原油与整个油脂板块承压，限制反弹高度，短期相对抗跌。</p></div>
-          </div>
-          <p class="note">品种后★即为看空， ★为看多，星星数量代表强烈程度</p>
-        </div>
-      </div>
-
-      <div class="card" data-block>
-        <div class="card-h"><h2>基本面 · 化工与有色板块</h2><span class="sub">8 个品种</span></div>
-        <div class="card-b">
-          <div class="grid3">
-            <div class="kcard" data-name="PX"><div class="khead"><span class="kname">PX</span><span class="stars">★★</span><span class="kboard">化工</span></div><p class="kview">库存低位，国产开工略回升，但离满产仍有距离，进口方面，目前PX1月现货价高位下跌，听闻海外会增产，驱动缓慢下跌，暂未体现在物流量增加。</p></div>
-            <div class="kcard" data-name="原油"><div class="khead"><span class="kname">原油</span><span class="stars">★</span><span class="kboard">化工</span></div><p class="kview">上周Kpler原油库存继续回落，库存从在途转向岸上，岸上库存增加，压力给到炼厂产品，原油未来存累库预期，驱动将从强走弱。风险溢价有所降温，中东-中国运费回落，预计油价维持85-100区间。</p></div>
-            <div class="kcard" data-name="乙二醇"><div class="khead"><span class="kname">乙二醇</span><span class="stars">★</span><span class="kboard">化工</span></div><p class="kview">本周MEG港口库存回落，未来一周到港偏低，11月国内EG转产EO以及意外停车，累库整体不及预期，12月驱动后期走弱，市场关注几套重要装置重启，目前看重启可能继续推迟。</p></div>
-            <div class="kcard" data-name="PTA"><div class="khead"><span class="kname">PTA</span><span class="stars">★★</span><span class="kboard">化工</span></div><p class="kview">上周库存回落，供应虽环比回升，但主力供应商基差报价高位，主力控货情况下，预计后期驱动维持在强区间，需看到PX进口增加，才能做空PTA。</p></div>
-            <div class="kcard" data-name="甲醇"><div class="khead"><span class="kname">甲醇</span><span class="stars">★★</span><span class="kboard">化工</span></div><p class="kview">11月甲醇国产及进口增量，需求端偏弱，但下游MTO部分装置重启预期，库存绝对水平偏低。</p></div>
-            <div class="kcard" data-name="PE"><div class="khead"><span class="kname">PE</span><span class="stars">★</span><span class="kboard">化工</span></div><p class="kview">国产供应预期增多，且11-12月国内较多新装置计划投产，需求端逐步进入淡季，对价格支撑乏力。</p></div>
-            <div class="kcard" data-name="烧碱"><div class="khead"><span class="kname">烧碱</span><span class="stars">★</span><span class="kboard">氯碱</span></div><p class="kview">烧碱市场需求弱，虽处低估值但不可见向上驱动。PVC需求虽未见向好，但氯碱双亏局面对PVC价格有弱支撑，但仍存化工品普跌情绪拖累PVC上涨行情兑现。</p></div>
-            <div class="kcard" data-name="PVC"><div class="khead"><span class="kname">PVC</span><span class="stars">★</span><span class="kboard">氯碱</span></div></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 多空池 -->
-    <section class="panel" id="p2">
-      <div class="card">
-        <div class="card-h"><h2>多空池</h2><span class="sub">多头 10 · 空头 13</span></div>
-        <div class="card-b">
-          <div class="pools">
-            <div class="pool bull">
-              <div class="ph"><span>多头品种池</span><span>10</span></div>
-              <div class="pb">
-                <span class="chip">沪深300<i>★</i></span><span class="chip">中证500<i>★★</i></span><span class="chip">中证1000<i>★★★</i></span><span class="chip">天然橡胶<i>★★★</i></span><span class="chip">菜油<i>★★★</i></span><span class="chip">菜粕<i>★★★</i></span><span class="chip">20号胶<i>★★★</i></span><span class="chip">PTA<i>★★</i></span><span class="chip">MEG<i>★</i></span><span class="chip">PVC<i>★</i></span>
-              </div>
-            </div>
-            <div class="pool bear">
-              <div class="ph"><span>空头品种池</span><span>13</span></div>
-              <div class="pb">
-                <span class="chip">金<i>★★</i></span><span class="chip">银<i>★★</i></span><span class="chip">上证50<i>★</i></span><span class="chip">豆粕<i>★★</i></span><span class="chip">棕榈油<i>★★</i></span><span class="chip">豆油<i>★★★</i></span><span class="chip">PE<i>★</i></span><span class="chip">PX<i>★★</i></span><span class="chip">原油<i>★</i></span><span class="chip">甲醇<i>★★</i></span><span class="chip">合成橡胶<i>★</i></span><span class="chip">PE<i>★</i></span><span class="chip">烧碱<i>★</i></span>
-              </div>
-            </div>
-          </div>
-          <p class="note">品种下方★即为看空， ★为看多，星星数量代表强烈程度</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- 交易策略 -->
-    <section class="panel" id="p3">
-      <div class="card">
-        <div class="card-h"><h2>交易策略 · 股指CTA 与 CTA时序量价</h2></div>
-        <div class="card-b">
-          <p class="desc">股指CTA：仅交易股指期货，IF 单边做多；时序量价：单品种自身价量趋势，商品 3 条</p>
-          <div class="sc"><div class="sc-top"><span class="sc-name">中证1000 2703</span><span class="sc-tag">股指 CTA</span></div>
-            <div class="sc-row"><b>操作要点</b><span>03 均价5448，目标6100；上方卖出MO2612-c-6700</span></div>
-            <div class="sc-row goal"><b>目标 / 风险</b><span>目标6100</span></div></div>
-          <div class="sc"><div class="sc-top"><span class="sc-name">黄金au2702</span><span class="sc-tag">时序量价</span></div>
-            <div class="sc-row"><b>操作要点</b><span>持仓均价778，目标830；上方卖出au2701C824，均价16.56</span></div>
-            <div class="sc-row goal"><b>目标 / 风险</b><span>目标830</span></div></div>
-          <div class="sc"><div class="sc-top"><span class="sc-name">烧碱</span><span class="sc-tag">时序量价</span></div>
-            <div class="sc-row"><b>操作要点</b><span>01 合约 1400 多、1570 空</span></div>
-            <div class="sc-row goal"><b>目标 / 风险</b><span>1560做空，1450止盈 1400做多，1540止盈</span></div></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-h"><h2>交易策略 · CTA跨期套利与跨品种套利</h2></div>
-        <div class="card-b">
-          <p class="desc">跨期：同品种跨月价差；跨品种：相关品种多低估、空高估</p>
-          <div class="sc"><div class="sc-top"><span class="sc-name">豆粕 1-5 价差</span><span class="sc-tag">跨期套利- 反套</span></div>
-            <div class="sc-row"><b>操作要点</b><span>反套持有</span></div>
-            <div class="sc-row goal"><b>目标 / 风险</b><span>价格回到320以上再做缩小</span></div></div>
-          <div class="sc"><div class="sc-top"><span class="sc-name">豆粕 - 菜粕 01</span><span class="sc-tag">跨品种套利- 价差做缩</span></div>
-            <div class="sc-row"><b>操作要点</b><span>豆粕-菜粕到920以上再做缩</span></div>
-            <div class="sc-row goal"><b>目标 / 风险</b><span>920以上再做缩</span></div></div>
-          <div class="sc"><div class="sc-top"><span class="sc-name">PVC 01、EG 03</span><span class="sc-tag">跨品种套利</span></div>
-            <div class="sc-row"><b>操作要点</b><span>多2手PVC2701空一手eg2703</span></div>
-            <div class="sc-row goal"><b>目标 / 风险</b><span>PVC单边4960止盈 eg单边4650止盈</span></div></div>
-          <div class="sc"><div class="sc-top"><span class="sc-name">甲醇</span><span class="sc-tag">跨期套利- 正套</span></div>
-            <div class="sc-row"><b>操作要点</b><span>MA 1-5正套，345入场</span></div>
-            <div class="sc-row goal"><b>目标 / 风险</b><span>目标385</span></div></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 账户运行情况 -->
-    <section class="panel" id="p4">
-      <div class="card">
-        <div class="card-h"><h2>账户运行情况</h2><span class="sub">本期待补充</span></div>
-        <div class="card-b"><div class="skel"><div class="sk">—</div><div class="sk">—</div><div class="sk">—</div><div class="sk">—</div></div></div>
-      </div>
-    </section>
+    <div class="pillbar"><span class="plab">品种</span><div class="pills" id="pills"></div></div>
+    <section class="panel on" id="p1"></section>
+    <section class="panel" id="p2"></section>
+    <section class="panel" id="p3"></section>
+    <section class="panel" id="p4"></section>
   </div>
-
-  <!-- 右侧栏 -->
   <aside class="rail">
     <div class="card">
-      <div class="card-h"><h2 style="font-size:13.5px">本周多空池</h2><span class="right">共 23</span></div>
+      <div class="card-h"><h2 style="font-size:13.5px">本周多空池</h2><span class="right" id="railcnt">共 0</span></div>
       <div class="card-b" id="railList"></div>
     </div>
-
   </aside>
 </main>
 
+<script id="DATA" type="application/json">[{"cover": {"title": "研究中心内部行情策略会", "qual": "投资咨询业务资格： 证监许可【XX】XXX号", "maker": "报告制作人：XX 从业资格号：XXXXX 投资咨询号：XXXX", "disc": "重要提示：本报告非期货交易咨询业务项下服务，其中的观点和信息仅供参考，不构成任何投资建议。在任何情况下，本公司不会因为关注、收到或阅读本报告内容而视相关人员为客户；期市有风险，交易需谨慎。"}, "fund": [{"title": "基本面 · 股指、橡胶", "rows": [["股指", "上证50", "★", "国家队护盘资金超买。"], ["股指", "沪深300", "★", "沪深300股债风险溢价性价比高。"], ["股指", "中证1000", "★★★", "中证1000流动性超卖。"], ["股指", "中证500", "★★", "中证500：流动性超卖。"], ["贵金属", "黄金", "★★", "实际利率和通胀预期压制，周五成交量激增库存不变，下游需求有恢复可能。"], ["贵金属", "白银", "★★", "实际利率和通胀预期压制，光伏需求用银占总成本下降"], ["橡胶", "天然橡胶", "★★★", "低库存、减产预期"], ["橡胶", "20号胶", "★★★", "超低库存、减产预期"], ["橡胶", "合成橡胶", "★", "跟随原油大幅波动"]], "note": "品种后★即为看空， ★为看多，星星数量代表强烈程度"}, {"title": "基本面 · 油脂油料", "rows": [["油脂油料", "豆粕", "★★", "底部震旦，偏中性。国内高库存与美豆丰产压制盘面，中美俄会晤未传出对农产品的实质性利多，美豆库存紧平衡，南美播种正常推进，短期缺乏驱动，震荡为主。"], ["油脂油料", "菜粕", "★★★", "底部震荡，相对估值均较低。水产进入四季度淡季，需求转弱压制盘面，库存连续两周累积；加拿大旧作出口尾声、到港短期减少及油厂开机下降带来低库存与高基差支撑，但更多是托底而非向上驱动，供需两淡下以震荡为主。盘面在2100—2150区间存在较强的前低支撑共识。"], ["油脂油料", "棕榈油", "★★", "风险偏好收紧下，基本面内外库存压力较大，但前期快速下跌使得动态估值（偏差方面）已经比基本面反应的估值低，关注棕榈油后续止跌企稳（警惕原油破位带来的利空）。"], ["油脂油料", "豆油", "★★★", "收储兑现托底近月、榨利深亏，但高库存且去库缓慢压制反弹高度，目前豆油基本反应基本面情况，相对估值偏高。"], ["油脂油料", "菜油", "★★★", "基差坚挺，低库存格局对现货有托底，但原油与整个油脂板块承压，限制反弹高度，短期相对抗跌。"]], "note": "品种后★即为看空， ★为看多，星星数量代表强烈程度"}, {"title": "基本面 · 化工与有色板块", "rows": [["化工", "PX", "★★", "库存低位，国产开工略回升，但离满产仍有距离，进口方面，目前PX1月现货价高位下跌，听闻海外会增产，驱动缓慢下跌，暂未体现在物流量增加。"], ["化工", "原油", "★", "上周Kpler原油库存继续回落，库存从在途转向岸上，岸上库存增加，压力给到炼厂产品，原油未来存累库预期，驱动将从强走弱。风险溢价有所降温，中东-中国运费回落，预计油价维持85-100区间。"], ["化工", "乙二醇", "★", "本周MEG港口库存回落，未来一周到港偏低，11月国内EG转产EO以及意外停车，累库整体不及预期，12月驱动后期走弱，市场关注几套重要装置重启，目前看重启可能继续推迟。"], ["化工", "PTA", "★★", "上周库存回落，供应虽环比回升，但主力供应商基差报价高位，主力控货情况下，预计后期驱动维持在强区间，需看到PX进口增加，才能做空PTA。"], ["化工", "甲醇", "★★", "11月甲醇国产及进口增量，需求端偏弱，但下游MTO部分装置重启预期，库存绝对水平偏低。"], ["化工", "PE", "★", "国产供应预期增多，且11-12月国内较多新装置计划投产，需求端逐步进入淡季，对价格支撑乏力。"], ["氯碱", "烧碱", "★", "烧碱市场需求弱，虽处低估值但不可见向上驱动。PVC需求虽未见向好，但氯碱双亏局面对PVC价格有弱支撑，但仍存化工品普跌情绪拖累PVC上涨行情兑现。"], ["氯碱", "PVC", "★", "烧碱市场需求弱，虽处低估值但不可见向上驱动。PVC需求虽未见向好，但氯碱双亏局面对PVC价格有弱支撑，但仍存化工品普跌情绪拖累PVC上涨行情兑现。"]], "note": ""}], "strat": [{"title": "交易策略 · 股指CTA 与 CTA时序量价", "desc": "股指CTA：仅交易股指期货，IF 单边做多；时序量价：单品种自身价量趋势，商品 3 条", "rows": [{"name": "中证1000 2703", "tag": "股指 CTA", "op": "03 均价5448，目标6100；上方卖出MO2612-c-6700", "goal": "目标6100"}, {"name": "黄金au2702", "tag": "时序量价", "op": "持仓均价778，目标830；上方卖出au2701C824，均价16.56", "goal": "目标830"}, {"name": "烧碱", "tag": "时序量价", "op": "01 合约 1400 多、1570 空", "goal": "1560做空，1450止盈 1400做多，1540止盈"}]}, {"title": "交易策略 · CTA跨期套利与跨品种套利", "desc": "跨期：同品种跨月价差；跨品种：相关品种多低估、空高估", "rows": [{"name": "豆粕 1-5 价差", "tag": "跨期套利- 反套", "op": "反套持有", "goal": "价格回到320以上再做缩小"}, {"name": "豆粕 - 菜粕 01", "tag": "跨品种套利- 价差做缩", "op": "豆粕-菜粕到920以上再做缩", "goal": "920以上再做缩"}, {"name": "PVC 01、EG 03", "tag": "跨品种套利", "op": "多2手PVC2701空一手eg2703", "goal": "PVC单边4960止盈 eg单边4650止盈"}, {"name": "甲醇", "tag": "跨期套利- 正套", "op": "MA 1-5正套，345入场", "goal": "目标385"}]}], "pools": {"bull": [["沪深300", "★"], ["中证500", "★★"], ["中证1000", "★★★"], ["天然橡胶", "★★★"], ["菜油", "★★★"], ["菜粕", "★★★"], ["20号胶", "★★★"], ["PTA", "★★"], ["MEG", "★"], ["PVC", "★"]], "bear": [["金", "★★"], ["银", "★★"], ["上证50", "★"], ["豆粕", "★★"], ["棕榈油", "★★"], ["豆油", "★★★"], ["PE", "★"], ["PX", "★★"], ["原油", "★"], ["甲醇", "★★"], ["合成橡胶", "★"], ["PE", "★"], ["烧碱", "★"]]}, "empty": true, "date": "2026-11-23"}, {"cover": {"title": "研究中心内部行情策略会", "qual": "投资咨询业务资格： 证监许可【XX】XXX号", "maker": "报告制作人：XX 从业资格号：XXXXX 投资咨询号：XXXX", "disc": "重要提示：本报告非期货交易咨询业务项下服务，其中的观点和信息仅供参考，不构成任何投资建议。在任何情况下，本公司不会因为关注、收到或阅读本报告内容而视相关人员为客户；期市有风险，交易需谨慎。"}, "fund": [{"title": "基本面 · 股指、橡胶与油脂油料", "rows": [["股指", "IF 300", "★★★", "指数已企稳、估值性价比偏高，大跌可能性不高；IF 年化基差率约 8%，大盘安全垫更厚；中证 1000 由超买转超卖、上证 50 因护盘偏超买"], ["股指", "IH 50", "★★★", "指数已企稳、估值性价比偏高，大跌可能性不高；IF 年化基差率约 8%，大盘安全垫更厚；中证 1000 由超买转超卖、上证 50 因护盘偏超买"], ["股指", "IM 1000", "★★★", "指数已企稳、估值性价比偏高，大跌可能性不高；IF 年化基差率约 8%，大盘安全垫更厚；中证 1000 由超买转超卖、上证 50 因护盘偏超买"], ["贵金属", "黄金", "★", "黄金年内难有明显上涨、一个月维度偏空；白银下跌是库存转移至伦敦而非消失，COMEX 累库＋伦敦现货偏紧，走向看关税与流通政策"], ["贵金属", "白银", "★", "黄金年内难有明显上涨、一个月维度偏空；白银下跌是库存转移至伦敦而非消失，COMEX 累库＋伦敦现货偏紧，走向看关税与流通政策"], ["橡胶", "天然橡胶", "★★★", "国内库存未累起、下月即将停割；泰国仍有两个月高产期，马来西亚、印尼受厄尔尼诺提前减产"], ["橡胶", "20号胶", "★★★", "国内库存未累起、下月即将停割；泰国仍有两个月高产期，马来西亚、印尼受厄尔尼诺提前减产"], ["橡胶", "合成橡胶", "★★★", "跟随原油波动、产能过剩，长期偏空；波动率大，不宜与天然橡胶配对做套利腿"], ["油脂油料", "豆粕", "★★", "USDA 11 月单产上调幅度不及预期、出口调得乐观，美豆库存消费比收紧；豆粕 01 在 3000 附近接近前低，继续做空缺乏成本驱动"], ["油脂油料", "菜粕", "★★★", "USDA 11 月单产上调幅度不及预期、出口调得乐观，美豆库存消费比收紧；豆粕 01 在 3000 附近接近前低，继续做空缺乏成本驱动"], ["油脂油料", "棕榈油", "★★", "MPOB 11 月累库低于预期但库存仍创纪录，报告落地后利空出尽、超跌反弹；豆油跟随，短期不看大涨"], ["油脂油料", "豆油", "★★", "MPOB 11 月累库低于预期但库存仍创纪录，报告落地后利空出尽、超跌反弹；豆油跟随，短期不看大涨"], ["葵花籽油", "葵花籽油", "", "一手 20 吨、厂库＋仓库均可交割，进口葵油基本可应交尽交；国产葵籽约 26 万吨、进口葵油约 115 万吨；back 结构、近强远弱"]], "note": ""}, {"title": "基本面 · 化工与有色板块", "rows": [["化工", "PX", "★★", "化工强弱：PX＞原油＞乙二醇（MEG）＞PTA，强驱动但价格已高于估值，强弱关系不明显、不建议硬做正套；PX 库存低位，原油五年低位、90—110 区间"], ["化工", "原油", "★★", "化工强弱：PX＞原油＞乙二醇（MEG）＞PTA，强驱动但价格已高于估值，强弱关系不明显、不建议硬做正套；PX 库存低位，原油五年低位、90—110 区间"], ["化工", "乙二醇", "★", "港口仅累库 2 万吨、供应回归不及预期（装置转产 EO/PE、意外停车）；01 约 5000 低于成本约 5593，基差约 800，易反弹"], ["化工", "PTA", "★", "PX 原料不足致新凤鸣、桐昆降负荷，累库不及预期，空头星级由 2 星下调至 1 星；加工费估值偏高"], ["氯碱", "烧碱", "★", "烧碱围绕 1560 上下约 50 元偏强震荡；PVC 围绕 4950 上下 100 元、上方 5000—5100 为顶，两者只能做区间"], ["氯碱", "PVC", "★★★", "烧碱围绕 1560 上下约 50 元偏强震荡；PVC 围绕 4950 上下 100 元、上方 5000—5100 为顶，两者只能做区间"], ["有色", "镍", "", "弱现实与政策预期拉锯：印尼2027配额收紧＋联合减产传闻拉涨，但减产未兑现，警惕冲高回落"], ["有色", "不锈钢", "", "供应完全过剩，长期在12000—13000平台运行，反弹幅度明显弱于镍"], ["新能源", "碳酸锂", "", "10月再跌约25%、11/4创8.64万年内低点，8万已进成本区；但排产与港口库存创新高，属摸底不是反转"]], "note": ""}], "strat": [{"title": "交易策略 · 股指CTA 与 CTA时序量价", "desc": "股指CTA：仅交易股指期货，IF 单边做多；时序量价：单品种自身价量趋势，商品 3 条", "rows": [{"name": "IF 沪深300", "tag": "股指CTA·做多", "op": "现价可进场", "goal": "一个月维度偏多，基差安全垫约8%，大跌可能性不高"}, {"name": "天然橡胶 / 20号胶", "tag": "时序量价·做多", "op": "现价进场，优先 20 号胶", "goal": "库存未累起；风险：泰国还有两个月高产期"}, {"name": "乙二醇 EG01", "tag": "时序量价· 短趋势多", "op": "短趋势多单，关注上涨持续性", "goal": "高度不看过高"}, {"name": "棕榈油", "tag": "时序量价·做多", "op": "超跌反弹可跟随", "goal": "短期不看大涨；风险：库存创纪录"}]}, {"title": "交易策略 · CTA跨期套利与跨品种套利", "desc": "跨期：同品种跨月价差；跨品种：相关品种多低估、空高估；本期执行 2 条", "rows": [{"name": "豆粕 1-5 价差", "tag": "跨期套利 1-5 反套持有", "op": "反套持有", "goal": "目标200，仓位宜轻"}, {"name": "豆粕 - 菜粕 01", "tag": "跨品种套利 价差做缩", "op": "800 以上减半仓", "goal": "不一定到700，800以下逐步降仓"}]}], "pools": {"bull": [["IM 1000", "★★★"], ["天然橡胶", "★★★"], ["20号胶", "★★★"], ["PVC", "★★★"]], "bear": [["合成橡胶", "★★★"]]}, "empty": true, "date": "2026-11-12"}]</script>
 <script>
-  var pools = [
-    ["沪深300","★","b"],["中证500","★★","b"],["中证1000","★★★","b"],["天然橡胶","★★★","b"],
-    ["菜油","★★★","b"],["菜粕","★★★","b"],["20号胶","★★★","b"],["PTA","★★","b"],["MEG","★","b"],["PVC","★","b"],
-    ["金","★★","s"],["银","★★","s"],["上证50","★","s"],["豆粕","★★","s"],["棕榈油","★★","s"],
-    ["豆油","★★★","s"],["PE","★","s"],["PX","★★","s"],["原油","★","s"],["甲醇","★★","s"],
-    ["合成橡胶","★","s"],["PE","★","s"],["烧碱","★","s"]
-  ];
-  document.getElementById("railList").innerHTML = pools.map(function(p){
-    return '<div class="rj '+p[2]+'"><b>'+p[0]+'</b><i>'+p[1]+'</i></div>';
+var DATA = JSON.parse(document.getElementById("DATA").textContent);
+var W = 0, SEC = "p1", FILTER = "全部品种";
+
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+
+function namesOf(w){
+  var n = {};
+  w.fund.forEach(function(b){ b.rows.forEach(function(r){ if (r[1]) n[r[1]] = 1; }); });
+  return Object.keys(n).sort();
+}
+
+function renderWeeks(){
+  document.getElementById("weeks").innerHTML = DATA.map(function(w,i){
+    return '<button class="item wk' + (i === W ? " on" : "") + '" data-i="' + i + '"'
+      + ' onclick="pickWeek(' + i + ')">'
+      + esc(w.date) + (i === 0 ? '　最新' : '') + '</button>';
   }).join("");
+  document.getElementById("topdate").textContent = DATA[W] ? DATA[W].date : "";
+}
 
-  var tabs = [].slice.call(document.querySelectorAll(".tab"));
-  var menu = [].slice.call(document.querySelectorAll(".item[data-p]"));
-  var panels = [].slice.call(document.querySelectorAll(".panel"));
-  function show(id){
-    panels.forEach(function(p){ p.classList.toggle("on", p.id === id); });
-    tabs.forEach(function(t){ t.classList.toggle("on", t.dataset.p === id); });
-    menu.forEach(function(m){ m.classList.toggle("on", m.dataset.p === id); });
-    document.querySelector(".side").classList.remove("open");
-  }
-  tabs.concat(menu).forEach(function(b){ b.addEventListener("click", function(){ show(b.dataset.p); }); });
+function pickWeek(i){ W = i; FILTER = "全部品种"; renderWeeks(); renderAll(); }
 
-  function applyFilter(name){
-    document.querySelectorAll("#p1 .kcard").forEach(function(c){
-      c.style.display = (name === "全部品种" || c.dataset.name === name) ? "" : "none";
-    });
-    document.querySelectorAll("#p1 [data-block]").forEach(function(bk){
-      var any = [].some.call(bk.querySelectorAll(".kcard"), function(c){ return c.style.display !== "none"; });
-      bk.style.display = any ? "" : "none";
-    });
-  }
-  var pills = [].slice.call(document.querySelectorAll("#pills .pill"));
-  pills.forEach(function(b){
-    b.addEventListener("click", function(){
-      pills.forEach(function(x){ x.classList.toggle("on", x === b); });
-      applyFilter(b.dataset.f);
-    });
+function renderTiles(w){
+  var n = namesOf(w).length;
+  var b = (w.pools.bull || []).length, s = (w.pools.bear || []).length;
+  var st = w.strat.reduce(function(a,x){ return a + x.rows.length; }, 0);
+  var t = [
+    ["t1","覆盖品种",n,"本周跟踪",""],
+    ["t2","多头池",b,"看多品种","#009688"],
+    ["t3","空头池",s,"看空品种","#bf242a"],
+    ["t4","策略超市",st,"在跟策略","#0a7d63"]
+  ];
+  document.getElementById("strip").innerHTML = t.map(function(x){
+    return '<div class="tile ' + x[0] + '"><div class="h">' + x[1] + '</div><div class="b">'
+      + '<div class="v"' + (x[4] ? ' style="color:' + x[4] + '"' : '') + '>' + x[2] + '</div>'
+      + '<div class="s">' + x[3] + '</div></div></div>';
+  }).join("");
+  var set = function(id, v){ var e = document.getElementById(id); if (e) e.textContent = v; };
+  set("c1", n); set("c2", b + s); set("c3", st);
+  set("t1", n); set("t2", b + s); set("t3", st);
+  set("hdate", w.date);
+}
+
+
+function renderPills(w){
+  var names = namesOf(w).slice();
+  if (FILTER !== "全部品种" && names.indexOf(FILTER) < 0) names.push(FILTER);
+  document.getElementById("pills").innerHTML =
+    '<button class="pill' + (FILTER === "全部品种" ? " on" : "") + '" data-name="全部品种">全部品种</button>'
+    + names.map(function(n){
+        return '<button class="pill' + (FILTER === n ? " on" : "") + '" data-name="' + esc(n) + '">' + esc(n) + '</button>';
+      }).join("");
+}
+
+function setFilter(name){
+  FILTER = name; renderPills(DATA[W]); renderSection(); scrollPillIntoView();
+}
+
+function scrollPillIntoView(){
+  var bar = document.getElementById("pills");
+  var on = bar && bar.querySelector(".pill.on");
+  if (on) bar.scrollLeft = Math.max(0, on.offsetLeft - 80);
+}
+
+function jumpOpinion(name){
+  FILTER = name;
+  renderPills(DATA[W]);
+  show("p1");
+  renderSection();
+  scrollPillIntoView();
+  var c = document.querySelector(".col-main");
+  if (c) c.scrollTop = 0;
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function renderFund(w){
+  var out = "";
+  w.fund.forEach(function(b){
+    var rows = b.rows.filter(function(r){ return FILTER === "全部品种" || r[1] === FILTER; });
+    if (!rows.length) return;
+    var cards = rows.map(function(r){
+      return '<div class="kcard" data-name="' + esc(r[1]) + '"><div class="khead">'
+        + '<span class="kname">' + esc(r[1]) + '</span>'
+        + '<span class="stars">' + esc(r[2]) + '</span>'
+        + (r[0] ? '<span class="kboard">' + esc(r[0]) + '</span>' : '')
+        + '</div>' + (r[3] ? '<p class="kview">' + esc(r[3]) + '</p>' : '') + '</div>';
+    }).join("");
+    var note = (b.note && FILTER === "全部品种") ? '<p class="note">' + esc(b.note) + '</p>' : "";
+    out += '<div class="card"><div class="card-h"><h2>' + esc(b.title) + '</h2><span class="sub">'
+      + rows.length + ' 个品种</span></div><div class="card-b"><div class="grid3">'
+      + cards + '</div>' + note + '</div></div>';
   });
+  return out || '<div class="card"><div class="card-b"><p class="note">该品种本周暂无观点记录。</p></div></div>';
+}
 
-  function filterByName(q){
-    q = (q || "").trim();
-    window.scrollTo({top:0,behavior:"smooth"});
-    if (q) { show("p1"); }
-    document.querySelectorAll("#p1 .kcard").forEach(function(c){
-      var hit = !q || (c.dataset.name || "").indexOf(q) >= 0;
-      c.style.display = hit ? "" : "none";
-    });
-    document.querySelectorAll("#p1 [data-block]").forEach(function(bk){
-      var any = [].some.call(bk.querySelectorAll(".kcard"), function(c){ return c.style.display !== "none"; });
-      bk.style.display = any ? "" : "none";
-    });
-    pills.forEach(function(x){ x.classList.toggle("on", x.dataset.f === "全部品种"); });
+function renderPools(w){
+  function pool(key, label, items){
+    return '<div class="pool ' + key + '"><div class="ph"><span>' + label + '</span><span>'
+      + items.length + '</span></div><div class="pb">'
+      + items.map(function(it){ return '<button class="chip" data-jump="' + esc(it[0]) + '" title="查看该品种观点">'
+        + esc(it[0]) + '<i>' + esc(it[1]) + '</i></button>'; }).join("")
+      + '</div></div>';
   }
+  var bull = w.pools.bull || [], bear = w.pools.bear || [];
+  if (!bull.length && !bear.length) return '<div class="card"><div class="card-b"><p class="note">本期多空池暂无内容。</p></div></div>';
+  return '<div class="card"><div class="card-h"><h2>多空池</h2><span class="sub">多头 ' + bull.length
+    + ' · 空头 ' + bear.length + ' · 点击品种可查看观点</span></div><div class="card-b"><div class="pools">'
+    + pool("bull", "多头品种池", bull) + pool("bear", "空头品种池", bear)
+    + '</div></div></div>';
+}
+
+function renderStrat(w){
+  if (!w.strat.length) return '<div class="card"><div class="card-b"><p class="note">本期交易策略暂无内容。</p></div></div>';
+  return w.strat.map(function(s){
+    var cards = s.rows.map(function(r){
+      return '<div class="sc"><div class="sc-top"><span class="sc-name">' + esc(r.name) + '</span>'
+        + (r.tag ? '<span class="sc-tag">' + esc(r.tag) + '</span>' : '') + '</div>'
+        + '<div class="sc-row"><b>操作要点</b><span>' + esc(r.op) + '</span></div>'
+        + '<div class="sc-row goal"><b>目标 / 风险</b><span>' + esc(r.goal) + '</span></div></div>';
+    }).join("");
+    return '<div class="card"><div class="card-h"><h2>' + esc(s.title) + '</h2></div><div class="card-b">'
+      + (s.desc ? '<p class="desc">' + esc(s.desc) + '</p>' : "") + cards + '</div></div>';
+  }).join("");
+}
+
+function renderAccount(){
+  return '<div class="card"><div class="card-h"><h2>账户运行情况</h2><span class="sub">本期待补充</span></div>'
+    + '<div class="card-b"><div class="skel">'
+    + '<div class="sk">—</div><div class="sk">—</div><div class="sk">—</div><div class="sk">—</div>'
+    + '</div></div></div>';
+}
+
+function renderRail(w){
+  var bull = w.pools.bull || [], bear = w.pools.bear || [];
+  var all = bull.map(function(x){ return [x[0], x[1], "b"]; })
+    .concat(bear.map(function(x){ return [x[0], x[1], "s"]; }));
+  document.getElementById("railcnt").textContent = "共 " + all.length;
+  document.getElementById("railList").innerHTML = all.map(function(p){
+    return '<div class="rj ' + p[2] + '" data-jump="' + esc(p[0]) + '" title="查看该品种观点"><b>'
+      + esc(p[0]) + '</b><i>' + esc(p[1]) + '</i></div>';
+  }).join("") || '<p class="note">本期暂无</p>';
+}
+
+function renderSection(){
+  var w = DATA[W];
+  document.getElementById("p1").innerHTML = renderFund(w);
+  document.getElementById("p2").innerHTML = renderPools(w);
+  document.getElementById("p3").innerHTML = renderStrat(w);
+  document.getElementById("p4").innerHTML = renderAccount();
+}
+
+function renderAll(){
+  var w = DATA[W];
+  if (!w) return;
+  renderTiles(w); renderPills(w); renderSection(); renderRail(w);
+}
+
+document.querySelectorAll(".tab").forEach(function(t){
+  t.addEventListener("click", function(){ show(t.dataset.p); });
+});
+document.querySelectorAll(".item[data-p]").forEach(function(t){
+  t.addEventListener("click", function(){ show(t.dataset.p); });
+});
+document.getElementById("weeks").addEventListener("click", function(e){
+  var b = e.target.closest(".wk"); if (b) pickWeek(Number(b.dataset.i));
+});
+document.getElementById("pills").addEventListener("click", function(e){
+  var b = e.target.closest(".pill"); if (b) setFilter(b.dataset.name);
+});
+document.addEventListener("click", function(e){
+  var j = e.target.closest("[data-jump]");
+  if (j) { jumpOpinion(j.dataset.jump); }
+});
+function show(id){
+  SEC = id;
+  document.querySelectorAll(".panel").forEach(function(p){ p.classList.toggle("on", p.id === id); });
+  document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("on", t.dataset.p === id); });
+  document.querySelectorAll(".item[data-p]").forEach(function(t){ t.classList.toggle("on", t.dataset.p === id); });
+  document.querySelector(".side").classList.remove("open");
+}
+
+function filterByName(q){
+  q = (q || "").trim();
+  if (q) show("p1");
+  if (!q) { setFilter("全部品种"); return; }
+  var w = DATA[W], hit = namesOf(w).filter(function(n){ return n.indexOf(q) >= 0; })[0];
+  if (hit) setFilter(hit);
+}
+
+(function(){ renderWeeks(); renderAll(); show("p1"); })();
 </script>
 </body>
 </html>

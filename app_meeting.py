@@ -44,18 +44,21 @@ section[data-testid="stSidebar"] hr{border-color:rgba(255,255,255,.08);}
 .sb-brand{display:flex;align-items:center;gap:9px;padding:0 0 10px;margin-bottom:2px;}
 .sb-brand .mark{width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#00b39f,#00796b);
 display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;}
-.sb-brand b{font-size:15px;font-weight:600;color:#fff;line-height:1.2;}
+.sb-brand b{font-size:14px;font-weight:600;color:#fff;line-height:1.35;letter-spacing:.01em;}
 .sb-brand span{font-size:11px;color:rgba(255,255,255,.5);display:block;}
 .sb-line{height:1px;background:rgba(255,255,255,.08);margin:10px 0 12px;}
 /* 顶部深色条 */
 /* 顶部分段标签 */
-[data-testid="stButtonGroup"]{margin:0 0 10px;}
-[data-testid="stButtonGroup"] button{border-radius:3px !important;border:1px solid #dfe5e9 !important;
-background:#fff !important;color:#4a5962 !important;font-size:13px !important;min-height:32px;}
+[data-testid="stButtonGroup"]{margin:0 0 14px;background:#fff;border:1px solid #e3e8ec;border-radius:8px;
+padding:4px;display:inline-flex;box-shadow:0 1px 2px rgba(16,24,40,.05);}
+[data-testid="stButtonGroup"] button{border-radius:6px !important;border:0 !important;
+background:transparent !important;color:#4a5560 !important;font-size:13.5px !important;
+min-height:38px !important;padding:0 20px !important;}
 [data-testid="stButtonGroup"] button[data-selected="true"],
 [data-testid="stButtonGroup"] button[aria-checked="true"]{background:var(--teal) !important;
 border-color:var(--teal) !important;color:#fff !important;}
-[data-testid="stButtonGroup"] button:hover{border-color:#c7d2d8 !important;color:#222 !important;}
+[data-testid="stButtonGroup"] button:hover{background:#f1f7f6 !important;color:var(--teal) !important;}
+.mobrand{display:none;}
 .topbar{display:flex;align-items:center;gap:10px;background:var(--top);color:rgba(255,255,255,.9);
 border-radius:0;height:52px;padding:0 20px;font-size:14px;margin:-14px -18px 12px;}
 .topbar .sep{color:rgba(255,255,255,.4);}
@@ -125,15 +128,23 @@ border-radius:4px;padding:13px 16px;}
 @media(max-width:860px){
 header[data-testid="stHeader"]{display:flex !important;align-items:center;height:52px;background:var(--top) !important;
 left:0 !important;right:0 !important;width:100% !important;padding:0 8px;}
-header[data-testid="stHeader"]::after{content:"会议纪要";color:#fff;font-size:14px;font-weight:600;
-position:absolute;left:56px;top:13px;white-space:nowrap;}
+header[data-testid="stHeader"]::after{content:none !important;}
+header[data-testid="stHeader"] [data-testid="stToolbarActions"],
+header[data-testid="stHeader"] [data-testid="stMainMenu"]{display:none !important;}
+.mobrand{display:flex;position:fixed;left:72px;right:8px;top:0;height:52px;align-items:center;
+background:var(--top);color:#fff;font-size:12px;font-weight:600;z-index:1000000;pointer-events:none;
+letter-spacing:0;}
 header[data-testid="stHeader"] [data-testid="stSidebarCollapseButton"] *{color:#fff !important;fill:#fff !important;}
-header[data-testid="stHeader"] button{color:#fff !important;}
+header[data-testid="stHeader"] button{color:#fff !important;background:rgba(0,150,136,.95) !important;
+border-radius:6px !important;min-height:32px !important;padding:0 10px !important;}
 header[data-testid="stHeader"] svg{fill:#fff !important;color:#fff !important;}
 header[data-testid="stHeader"] [data-testid="stMainMenu"]{display:none !important;}
 header[data-testid="stHeader"] [data-testid="stAppDeployButton"]{display:none !important;}
 .block-container{padding-top:64px;}
 .topbar{display:none;}
+[data-testid="stButtonGroup"]{display:flex !important;width:100%;flex-wrap:wrap !important;justify-content:center;}
+[data-testid="stButtonGroup"]{justify-content:space-evenly;}
+[data-testid="stButtonGroup"] button{flex:0 0 auto !important;padding:0 9px !important;font-size:12px !important;min-height:34px !important;}
 .strip{grid-template-columns:1fr 1fr;gap:8px;} .chipcat .val{font-size:13.5px;}
 .grid,.pools{grid-template-columns:1fr;} .pcard{padding:12px 13px;}
 .pview{font-size:12.8px;} .srow{grid-template-columns:66px 1fr;}
@@ -254,36 +265,61 @@ def parse_week(path_str, mtime):
 
         if title.startswith("基本面"):
             tb = tables_of(slide)
+            rows, board, last_view = [], "", ""
+            for r in (tb[0][1:] if tb else []):
+                if len(r) < 3:
+                    continue
+                if r[0]:
+                    board = r[0]
+                if r[2]:
+                    last_view = r[2]
+                if r[1]:
+                    rows.append([board, r[1], r[2] or last_view])
             fund.append({
                 "title": title,
-                "rows": tb[0][1:] if tb else [],
+                "rows": rows,
                 "note": " ".join(notes_of(slide, title)),
             })
         elif "多空池" in title:
             pools = {"bull": {"label": "多头品种池", "items": []},
                      "bear": {"label": "空头品种池", "items": []}}
-            names, stars = [], []
-            for t, left, top in shapes_text(slide.shapes):
-                if t in ("多头品种池", "空头品种池", title):
-                    continue
-                if t.startswith("★") and len(t) <= 4:
-                    stars.append((t, left, top))
-                elif len(t) <= 12:
-                    names.append((t, left, top))
-            for name, x, y in names:
-                best, bestd = "", None
-                for s, sx, sy in stars:
-                    dy = sy - y
-                    if dy < -100000 or dy > 900000:
+            txt_pools = {"bull": [], "bear": []}
+            for t, _, _ in shapes_text(slide.shapes):
+                if "多头品种池" in t or "空头品种池" in t:
+                    body = t.split("：", 1)[-1] if "：" in t else ""
+                    key = "bull" if "多头" in t else "bear"
+                    for seg in re.split("）", body):
+                        if "（" in seg:
+                            nm = seg.split("（")[0].strip()
+                            st_ = seg.split("（", 1)[1].strip()
+                            if nm:
+                                txt_pools[key].append((nm, st_))
+            if txt_pools["bull"] or txt_pools["bear"]:
+                for k in ("bull", "bear"):
+                    pools[k]["items"] = txt_pools[k]
+            else:
+                names, stars = [], []
+                for t, left, top in shapes_text(slide.shapes):
+                    if t in ("多头品种池", "空头品种池", title):
                         continue
-                    d = abs(sx - x) + dy
-                    if bestd is None or d < bestd:
-                        best, bestd = s, d
-                key = "bull" if x < 5800000 else "bear"
-                pools[key]["items"].append((name, best, y))
-            for k in ("bull", "bear"):
-                pools[k]["items"].sort(key=lambda p: p[2])
-                pools[k]["items"] = [(n, s) for n, s, _ in pools[k]["items"]]
+                    if t.startswith("★") and len(t) <= 4:
+                        stars.append((t, left, top))
+                    elif len(t) <= 12:
+                        names.append((t, left, top))
+                for name, x, y in names:
+                    best, bestd = "", None
+                    for s, sx, sy in stars:
+                        dy = sy - y
+                        if dy < -100000 or dy > 900000:
+                            continue
+                        d = abs(sx - x) + dy
+                        if bestd is None or d < bestd:
+                            best, bestd = s, d
+                    key = "bull" if x < 5800000 else "bear"
+                    pools[key]["items"].append((name, best, y))
+                for k in ("bull", "bear"):
+                    pools[k]["items"].sort(key=lambda p: p[2])
+                    pools[k]["items"] = [(n, s) for n, s, _ in pools[k]["items"]]
             pools["note"] = " ".join(notes_of(slide, title))
         elif title.startswith("交易策略"):
             tb = tables_of(slide)
@@ -393,10 +429,10 @@ def strategy_html(s):
 
 
 def topbar(week, section):
-    st.markdown(
+    st.html(
+        f'<div class="mobrand">研究中心内部行情策略会</div>'
         f'<div class="topbar"><b>研究中心内部行情策略会</b>'
-        f'<span class="r">{esc(week["date"])} · 内部资料</span></div>',
-        unsafe_allow_html=True,
+        f'<span class="r">{esc(week["date"])} · 内部资料</span></div>'
     )
 
 
@@ -406,10 +442,10 @@ def strip(week, section):
     bear = len(week["pools"].get("bear", {}).get("items", [])) if week["pools"] else 0
     srows = sum(len(s["rows"]) for s in week["strat"])
     cells = [
-        ("c1", "基本面", f"{len(names)} 个品种", "股指 · 油脂 · 化工"),
-        ("c2", "多空池", f"{bull} / {bear}", "多头 / 空头"),
-        ("c3", "交易策略", f"{srows} 条", "股指 · 时序 · 套利"),
-        ("c4", "账户运行情况", "—", "本期待补充"),
+        ("c1", "覆盖品种", f"{len(names)} 个品种", "本周跟踪"),
+        ("c2", "多头池", f"{bull} 个", "看多品种"),
+        ("c3", "空头池", f"{bear} 个", "看空品种"),
+        ("c4", "策略超市", f"{srows} 条", "在跟策略"),
     ]
     html_parts = "".join(
         f'<div class="chipcat {c}"><div class="lab">{esc(t)}</div>'
@@ -419,18 +455,15 @@ def strip(week, section):
     st.markdown(f'<div class="strip">{html_parts}</div>', unsafe_allow_html=True)
 
 
-def hero(week):
-    c = week["cover"]
-    metas = [c["qual"]] + [x for x in re.split(r"\s{2,}", c["maker"]) if x]
-    meta_html = "".join(f"<span>{esc(x)}</span>" for x in metas if x)
-    st.markdown(
-        f"""<div class="card cover">
-<div class="card-h"><h2>{esc(c['title'] or '会议纪要')}</h2><span class="sub">{esc(week['date'])}</span></div>
-<div class="card-b"><div class="meta">{meta_html}</div>
-<p class="note">{esc(c['disclaimer'])}</p></div>
-</div>""",
-        unsafe_allow_html=True,
-    )
+SECTIONS = ["策略超市", "品种观点", "品种多空池", "账户运行情况"]
+
+
+def _jump_to_opinion():
+    name = st.session_state.get("jmp")
+    if name:
+        st.session_state.sec = "品种观点"
+        st.session_state.vf = name
+        st.session_state.jmp = None
 
 
 def main():
@@ -440,16 +473,17 @@ def main():
 
     if weeks:
         topbar(weeks[0], "")
+    if st.session_state.get("sec") not in SECTIONS:
+        st.session_state.sec = "品种观点"
     section = st.pills(
-        "板块", ["基本面", "多空池", "交易策略", "账户运行情况"],
-        default="基本面", label_visibility="collapsed",
-    ) or "基本面"
+        "板块", SECTIONS, key="sec", label_visibility="collapsed",
+    ) or "品种观点"
 
     # ---------------- 左侧目录 ----------------
     with st.sidebar:
         st.html(
             '<div class="sb-brand"><div class="mark">研</div>'
-            '<div><b>行情策略会</b><span>研究中心 · 会议纪要</span></div></div>'
+            '<b>研究中心内部行情策略会</b></div>'
         )
 
         if not weeks:
@@ -463,10 +497,15 @@ def main():
         week = weeks[widx]
         names = sorted({r["name"] for r in records(week)})
         pick = None
-        if section == "基本面":
+        if section == "品种观点":
             st.html('<div class="sb-line"></div>')
             opts = ["全部品种"] + names
-            sel = st.selectbox("品种", opts, index=0)
+            cur = st.session_state.get("vf")
+            if cur and cur != "全部品种" and cur not in opts:
+                opts.insert(1, cur)
+            if cur not in opts:
+                st.session_state.vf = "全部品种"
+            sel = st.selectbox("品种", opts, key="vf")
             pick = None if sel == "全部品种" else sel
             if pick and len(weeks) > 1:
                 st.caption("选择单个品种时，右侧会按周列出它的观点变化。")
@@ -475,9 +514,8 @@ def main():
         st.caption(f"共 {len(weeks)} 期 · 上传新 PPT 自动更新")
 
     # ---------------- 右侧内容 ----------------
-    hero(week)
 
-    if section == "基本面":
+    if section == "品种观点":
         if pick and len(weeks) > 1:
             st.markdown(
                 f'<div class="bt">{esc(pick)} · 按周追踪<em>共 {len(weeks)} 期</em></div>',
@@ -512,7 +550,7 @@ def main():
                     f'<div class="card-b">{fund_html(b, only=pick)}{note}</div></div>'
                 )
 
-    elif section == "多空池":
+    elif section == "品种多空池":
         if week["pools"]:
             inner = (
                 '<div class="pools">'
@@ -523,16 +561,23 @@ def main():
             tip = (f'<p class="tip">{esc(week["pools"]["note"])}</p>'
                    if week["pools"].get("note") else "")
             st.html(
-                f'<div class="card"><div class="card-h"><h2>多空池</h2>'
+                f'<div class="card"><div class="card-h"><h2>品种多空池</h2>'
                 f'<span class="sub">本周多空品种</span></div>'
                 f'<div class="card-b">{inner}{tip}</div></div>'
             )
+            pool_names = sorted(
+                {x[0] for x in week["pools"]["bull"]["items"] + week["pools"]["bear"]["items"]}
+            )
+            if pool_names:
+                st.caption("点击任一品种，直接跳到它在「品种观点」里的原文")
+                st.pills("快速跳转品种观点", pool_names, key="jmp",
+                         on_change=_jump_to_opinion, label_visibility="collapsed")
         else:
-            st.markdown('<p class="tip">本期多空池暂无内容。</p>', unsafe_allow_html=True)
+            st.markdown('<p class="tip">本期品种多空池暂无内容。</p>', unsafe_allow_html=True)
 
-    elif section == "交易策略":
+    elif section == "策略超市":
         if not week["strat"]:
-            st.markdown('<p class="tip">本期交易策略暂无内容。</p>', unsafe_allow_html=True)
+            st.markdown('<p class="tip">本期策略超市暂无内容。</p>', unsafe_allow_html=True)
         for s in week["strat"]:
             desc = f'<p class="desc">{esc(s["desc"])}</p>' if s["desc"] else ""
             st.html(
